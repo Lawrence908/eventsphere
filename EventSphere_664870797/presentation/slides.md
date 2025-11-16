@@ -202,9 +202,10 @@ Similar patterns used by Eventbrite, Meetup, and Airbnb
   "eventId": ObjectId("..."),
   "userId": ObjectId("..."),
   "venueId": ObjectId("..."),
+  "ticketId": ObjectId("..."),  // Optional - links to purchased ticket
   "checkInTime": ISODate("..."),
   "qrCode": "QR-554361",
-  "ticketTier": "VIP"
+  "ticketTier": "VIP"  // Denormalized for performance
 }
 ```
 
@@ -212,6 +213,7 @@ Similar patterns used by Eventbrite, Meetup, and Airbnb
 - 📈 Analytics flexibility for attendance patterns
 - 🚀 Scalability without document bloat
 - 🔒 Unique constraint prevents duplicates
+- 🔗 Optional ticket relationship (70% with tickets, 30% free/walk-ins)
 
 ---
 

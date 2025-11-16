@@ -223,15 +223,17 @@ Course: CSCI 485 - Fall 2025
 ### Bridge Collection (Slide 12)
 
 **Content:**
-- Checkins collection example
-- 3 benefits
+- Checkins collection example with optional ticketId
+- 4 benefits including ticket relationship
 
 **Visual Elements:**
-- Code block
-- Relationship diagram (users ↔ checkins ↔ events)
+- Code block showing ticketId field
+- Relationship diagram (users ↔ checkins ↔ events ↔ tickets)
 - Icon-based benefits
+- Note about 70% with tickets, 30% free/walk-ins
 
-**Screenshot Needed:** None
+**Screenshot Needed:**
+✅ **MongoDB Compass - Checkins Collection** - Sample checkin document showing ticketId relationship
 
 ---
 

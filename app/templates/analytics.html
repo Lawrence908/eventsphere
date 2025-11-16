@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics Dashboard - EventSphere{% endblock %}
+
+{% block head %}
+<style>
+    .stat-card {
+        background: linear-gradient(135deg, #023430 0%, #001E2B 100%);
+        border: 1px solid rgba(0, 237, 100, 0.2);
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 237, 100, 0.15);
+    }
+    
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #00ED64;
+        margin: 0;
+    }
+    
+    .stat-label {
+        color: #E2E8F0;
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .query-benchmark {
+        background: linear-gradient(135deg, #023430 0%, #001E2B 100%);
+        border: 1px solid rgba(0, 237, 100, 0.2);
+        border-left: 3px solid #00ED64;
+        padding: 1.5rem;
+        border-radius: 8px;
+        height: 100%;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    .query-benchmark:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 237, 100, 0.15);
+    }
+    
+    .query-name {
+        font-weight: 600;
+        color: #FFFFFF;
+        margin-bottom: 0.75rem;
+        font-size: 0.9rem;
+        line-height: 1.3;
+    }
+    
+    .query-time {
+        font-size: 2rem;
+        color: #00ED64;
+        font-weight: bold;
+        margin-bottom: 0.75rem;
+    }
+    
+    .query-status {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        margin-top: 0.5rem;
+    }
+    
+    .status-success {
+        background: rgba(0, 237, 100, 0.2);
+        color: #00ED64;
+    }
+    
+    .status-error {
+        background: rgba(239, 68, 68, 0.2);
+        color: #EF4444;
+    }
+    
+    .computed-stats-sample {
+        background: #0F151B;
+        border: 1px solid rgba(0, 237, 100, 0.1);
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        font-family: 'Courier New', monospace;
+        font-size: 0.85rem;
+    }
+    
+    .index-badge {
+        display: inline-block;
+        padding: 0.25rem 0.5rem;
+        margin: 0.25rem;
+        border-radius: 4px;
+        font-size: 0.75rem;
+        background: rgba(0, 237, 100, 0.1);
+        color: #00ED64;
+        border: 1px solid rgba(0, 237, 100, 0.2);
+    }
+    
+    .section-header {
+        border-bottom: 2px solid #00ED64;
+        padding-bottom: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="analytics-dashboard">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h1 class="display-5 fw-bold mb-2">
+                <i class="bi bi-graph-up-arrow text-accent"></i>
+                Analytics Dashboard
+            </h1>
+            <p class="lead text-muted">Real-time MongoDB performance metrics and computed patterns</p>
+        </div>
+    </div>
+
+    <!-- Collection Statistics -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <h3 class="section-header">Collection Statistics</h3>
+        </div>
+        {% if collection_stats %}
+            {% for collection, stats in collection_stats.items() %}
+            <div class="col-md-4 col-sm-6 mb-3">
+                <div class="stat-card">
+                    <div class="stat-value">{{ (stats.count | int) | format_number }}</div>
+                    <div class="stat-label">{{ collection|title }} Documents</div>
+                </div>
+            </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <!-- Computed Stats Overview -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <h3 class="section-header">Computed Pattern Statistics</h3>
+            <p class="text-muted mb-4">Pre-calculated statistics from events and venues collections</p>
+        </div>
+        
+        {% if computed_stats %}
+        <div class="col-md-6">
+            <h5 class="text-accent mb-3"><i class="bi bi-calendar-event"></i> Events Computed Stats</h5>
+            <div class="row">
+                <div class="col-6 mb-3">
+                    <div class="stat-card">
+                        <div class="stat-value">${{ computed_stats.events.totalRevenue | int | format_number }}</div>
+                        <div class="stat-label">Total Revenue</div>
+                    </div>
+                </div>
+                <div class="col-6 mb-3">
+                    <div class="stat-card">
+                        <div class="stat-value">{{ computed_stats.events.totalTicketsSold | int | format_number }}</div>
+                        <div class="stat-label">Tickets Sold</div>
+                    </div>
+                </div>
+                <div class="col-6 mb-3">
+                    <div class="stat-card">
+                        <div class="stat-value">{{ computed_stats.events.totalReviews | int | format_number }}</div>
+                        <div class="stat-label">Total Reviews</div>
+                    </div>
+                </div>
+                <div class="col-6 mb-3">
+                    <div class="stat-card">
+                        <div class="stat-value">{{ computed_stats.events.averageRating }}</div>
+                        <div class="stat-label">Avg Rating</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <h5 class="text-accent mb-3"><i class="bi bi-building"></i> Venues Computed Stats</h5>
+            <div class="row">
+                <div class="col-6 mb-3">
+                    <div class="stat-card">
+                        <div class="stat-value">${{ computed_stats.venues.totalRevenue | int | format_number }}</div>
+                        <div class="stat-label">Total Revenue</div>
+                    </div>
+                </div>
+                <div class="col-6 mb-3">
+                    <div class="stat-card">
+                        <div class="stat-value">{{ computed_stats.venues.totalEventsHosted | int | format_number }}</div>
+                        <div class="stat-label">Events Hosted</div>
+                    </div>
+                </div>
+                <div class="col-6 mb-3">
+                    <div class="stat-card">
+                        <div class="stat-value">{{ computed_stats.venues.averageAttendance | int | format_number }}</div>
+                        <div class="stat-label">Avg Attendance</div>
+                    </div>
+                </div>
+                <div class="col-6 mb-3">
+                    <div class="stat-card">
+                        <div class="stat-value">{{ computed_stats.venues.venuesWithStats | int | format_number }}</div>
+                        <div class="stat-label">Venues Tracked</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Query Performance Benchmarks -->
+    <div class="row mb-5">
+        <div class="col-12">
+            <h3 class="section-header">Query Performance Benchmarks</h3>
+            <p class="text-muted mb-4">Real-time execution times for common MongoDB queries</p>
+        </div>
+        
+        {% if query_performance and query_performance.benchmarks %}
+            {% for benchmark in query_performance.benchmarks %}
+            <div class="col-md-3 col-sm-6 mb-3">
+                <div class="query-benchmark">
+                    <div class="query-name">{{ benchmark.query }}</div>
+                    <div class="query-time">{{ benchmark.executionTime }}ms</div>
+                    <span class="query-status status-{{ benchmark.status }}">
+                        {{ benchmark.status|upper }}
+                    </span>
+                    {% if benchmark.resultCount %}
+                    <div class="mt-2">
+                        <small class="text-muted">Results: {{ benchmark.resultCount }}</small>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    <!-- Error Display -->
+    {% if error %}
+    <div class="alert alert-danger">
+        <i class="bi bi-exclamation-triangle"></i>
+        Error loading analytics: {{ error }}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Auto-refresh analytics every 30 seconds
+setInterval(function() {
+    // Could implement auto-refresh here if needed
+}, 30000);
+</script>
+{% endblock %}
+

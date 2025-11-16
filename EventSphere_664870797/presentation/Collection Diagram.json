@@ -84,6 +84,12 @@
           "schemaVersion": {
             "bsonType": "string"
           },
+          "ticketId": {
+            "bsonType": [
+              "objectId",
+              "null"
+            ]
+          },
           "ticketTier": {
             "bsonType": [
               "string",
@@ -1073,6 +1079,26 @@
         }
       ],
       "isInferred": true
+    },
+    {
+      "id": "checkin-ticket-relationship",
+      "relationship": [
+        {
+          "ns": "EventSphere.checkins",
+          "fields": [
+            "ticketId"
+          ],
+          "cardinality": 1
+        },
+        {
+          "ns": "EventSphere.tickets",
+          "fields": [
+            "_id"
+          ],
+          "cardinality": 1
+        }
+      ],
+      "isInferred": false
     }
   ]
 }

@@ -133,6 +133,22 @@ The `checkins` collection serves as a bridge table creating a many-to-many relat
 - Optimized indexes for common analytics queries
 - Scalability without document size bloat
 - Centralized check-in logic with consistent validation
+- Optional link to Tickets collection via `ticketId` (for purchased tickets)
+
+### 6. Checkin-Ticket Relationship Pattern
+
+Checkins optionally reference tickets to avoid data duplication while supporting both paid and free events:
+
+**Pattern:**
+- **With Ticket**: `ticketId` links to Tickets collection (70% of checkins)
+- **Without Ticket**: `ticketId` is null (30% - free events, walk-ins, staff)
+- **Denormalization**: `ticketTier` kept in checkin for quick display (performance optimization)
+
+**Benefits:**
+- Eliminates duplication of ticket data (tier, price)
+- Maintains referential integrity
+- Supports ticket status updates ("active" → "used")
+- Enables queries: "All checkins for ticket X" or "Ticket used for checkin Y"
 
 ## Collection Schemas
 
@@ -270,15 +286,42 @@ EventSphere implements a **dual ticket architecture** following MongoDB best pra
 
 **Key Features**:
 - Many-to-many relationship between users and events
+- Optional link to Tickets collection via `ticketId` (for purchased tickets)
 - QR code support for mobile check-ins
 - Location tracking for check-in verification
 - Device and method tracking for analytics
+
+**Checkin-Ticket Relationship**:
+
+Checkins can optionally reference tickets via `ticketId` field:
+
+```javascript
+{
+  "eventId": ObjectId("..."),
+  "userId": ObjectId("..."),
+  "ticketId": ObjectId("..."),  // Optional - links to purchased ticket
+  "ticketTier": "VIP",          // Denormalized for performance
+  "checkInTime": ISODate("..."),
+  "qrCode": "QR-554361"
+}
+```
+
+**Use Cases**:
+- **With Ticket**: Paid event check-ins link to ticket purchase (70% of checkins)
+- **Without Ticket**: Free events, walk-ins, staff, volunteers (30% of checkins)
+
+**Benefits**:
+- ✅ Avoids data duplication (ticketTier, pricePaid from ticket)
+- ✅ Maintains referential integrity
+- ✅ Enables queries: "Which ticket was used for this checkin?"
+- ✅ Supports ticket status updates: Mark ticket as "used" when checked in
+- ✅ `ticketTier` kept as denormalized field for performance (quick display)
 
 ## Indexing Strategy
 
 ### Strategic Index Design
 
-The database implements 20 strategic indexes (4 per collection) optimized for real-world query patterns with a focus on high-frequency operations:
+The database implements 24 strategic indexes (4 per collection, 6 collections) optimized for real-world query patterns with a focus on high-frequency operations:
 
 #### Events Collection (4 indexes)
 ```javascript
@@ -341,8 +384,8 @@ db.checkins.createIndex({ eventId: 1 });
 // 3. User attendance history (HIGH PRIORITY)
 db.checkins.createIndex({ userId: 1 });
 
-// 4. Venue time analytics (MEDIUM PRIORITY)
-db.checkins.createIndex({ venueId: 1, checkInTime: 1 });
+// 4. Ticket relationship (MEDIUM PRIORITY)
+db.checkins.createIndex({ ticketId: 1 });  // Link checkins to tickets - "which ticket was used for this checkin?"
 ```
 
 #### Users Collection (4 indexes)
