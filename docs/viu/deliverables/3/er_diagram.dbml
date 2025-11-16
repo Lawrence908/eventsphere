@@ -36,8 +36,9 @@ Table CHECKIN {
   event_id ObjectId
   user_id ObjectId
   venue_id ObjectId
+  ticket_id ObjectId [note: 'Optional - links to purchased ticket']
   
-  Note: 'Bridge table for many-to-many relationship between users and events with analytics'
+  Note: 'Bridge table for many-to-many relationship between users and events with analytics. Optionally links to tickets (70% have tickets, 30% are free/walk-ins)'
 }
 
 // Embedded Subdocuments (Internal Entities)
@@ -167,6 +168,7 @@ Ref: VENUE.venue_id < REVIEW.venue_id
 Ref: USER.user_id < CHECKIN.user_id
 Ref: EVENT.event_id < CHECKIN.event_id
 Ref: VENUE.venue_id < CHECKIN.venue_id
+Ref: TICKET.ticket_id < CHECKIN.ticket_id
 
 Ref: VENUE.venue_id < EVENT.venue_id
 

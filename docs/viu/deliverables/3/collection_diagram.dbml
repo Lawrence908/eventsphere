@@ -123,11 +123,15 @@ Table checkins {
   eventId ObjectId [note: 'REFERENCE - Event being checked into']
   userId ObjectId [note: 'REFERENCE - User checking in']
   venueId ObjectId [note: 'REFERENCE - Denormalized for analytics performance']
+  ticketId ObjectId [note: 'REFERENCE - Optional link to purchased ticket']
   
   Note: '''
   **BRIDGE COLLECTION:**
   • Many-to-many relationship between users and events
   • Denormalized venueId for analytics performance
+  • Optional ticketId links to Tickets collection (70% of checkins)
+  • Supports free events/walk-ins when ticketId is null (30%)
+  • ticketTier denormalized for performance (quick display)
   • Unique constraint on (eventId, userId)
   '''
 }
@@ -140,5 +144,6 @@ Ref: reviews.userId > users._id
 Ref: checkins.eventId > events._id
 Ref: checkins.userId > users._id
 Ref: checkins.venueId > venues._id
+Ref: checkins.ticketId > tickets._id
 Ref: tickets.eventId > events._id
 Ref: tickets.userId > users._id
