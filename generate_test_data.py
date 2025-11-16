@@ -1,8 +1,12 @@
 #!/usr/bin/env python3
 """
 Test Data Generator for EventSphere
-Generates comprehensive test data including events, venues, users, checkins, and reviews
+Generates comprehensive test data including events, venues, users, checkins, reviews, and tickets
 Supports both JSON export and direct MongoDB seeding
+
+Ticket Architecture:
+- Embedded EventTickets: Ticket types/tiers (Early Bird, VIP, etc.) embedded in events collection
+- Separate Tickets Collection: Individual user purchases (can scale to millions)
 
 Usage:
 python generate_test_data.py --seed-db --clear-db
@@ -1070,7 +1074,12 @@ def save_checkins_to_json(checkins: List[Dict[str, Any]], filename: str = "test_
     print(f"Saved to {filename}")
 
 def generate_event_tickets(event: Dict[str, Any]) -> List[Dict[str, Any]]:
-    """Generate embedded EventTickets (ticket types available for the event)"""
+    """Generate embedded EventTickets (ticket types/tiers available for the event)
+    
+    These are EMBEDDED in the events collection and represent ticket types/tiers
+    (e.g., "Early Bird", "General Admission", "VIP") with pricing and availability.
+    This is separate from the Tickets collection which stores individual user purchases.
+    """
     # Most events have 1-3 ticket tiers
     num_tiers = random.choices([1, 2, 3], weights=[50, 35, 15])[0]
     tickets = []
@@ -1113,7 +1122,14 @@ def generate_event_tickets(event: Dict[str, Any]) -> List[Dict[str, Any]]:
     return tickets
 
 def generate_user_tickets(events: List[Dict[str, Any]], users: List[Dict[str, Any]], ticket_count: int = 5000) -> List[Dict[str, Any]]:
-    """Generate separate Ticket collection (actual user purchases)"""
+    """Generate separate Tickets collection (actual user purchases)
+    
+    This is a SEPARATE collection from embedded EventTickets in events.
+    - Embedded EventTickets: Ticket types/tiers available (small, bounded, always with event)
+    - Separate Tickets: Individual user purchases (can grow to millions, needs independent queries)
+    
+    Best Practice: Both patterns are needed for scalability.
+    """
     print(f"Generating {ticket_count} user ticket purchases...")
     tickets = []
     

@@ -9,7 +9,8 @@ from .models import (
     Venue, VenueCreate, VenueUpdate,
     User, UserCreate, UserUpdate,
     Checkin, CheckinCreate, CheckinUpdate,
-    Review, ReviewCreate, ReviewUpdate
+    Review, ReviewCreate, ReviewUpdate,
+    Ticket, TicketCreate, TicketUpdate
 )
 from .utils import calculate_weekend_window
 from .geocoding import get_geocoding_service, GeocodingError

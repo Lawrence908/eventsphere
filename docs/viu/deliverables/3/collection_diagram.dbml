@@ -24,7 +24,7 @@ Table events {
   venueReference json [note: 'EXTENDED REFERENCE - Denormalized venue data for filtering']
   
   // Embedded Subdocuments
-  tickets json [note: 'EMBEDDED - Always displayed with events']
+  tickets json [note: 'EMBEDDED - Ticket types/tiers (Early Bird, VIP, etc.) - Always displayed with events']
   attendees json [note: 'EMBEDDED - Quick RSVP display']
   computedStats json [note: 'EMBEDDED - Pre-calculated for performance']
   
@@ -35,13 +35,37 @@ Table events {
   
   Note: '''
   **EMBEDDING DECISIONS:**
-  • tickets[] - Always displayed with events
+  • tickets[] - Ticket types/tiers (small, bounded, always with event)
   • attendees[] - Quick RSVP display  
   • computedStats - Pre-calculated for performance
   • venueReference - Extended reference for filtering
   
   **REFERENCING DECISIONS:**
   • venueId - Referenced (venue shared across events)
+  
+  **NOTE:** Individual user ticket purchases are in separate Tickets collection
+  '''
+}
+
+Table tickets {
+  _id ObjectId [pk, note: 'Primary Key']
+  eventId ObjectId [note: 'REFERENCE - Event ticket is for']
+  userId ObjectId [note: 'REFERENCE - User who purchased ticket']
+  pricePaid float [note: 'Price paid for ticket']
+  status string [note: 'active, cancelled, used, refunded']
+  ticketTier string [note: 'Ticket tier purchased (e.g., Early Bird, VIP)']
+  purchasedAt datetime [note: 'Purchase timestamp']
+  
+  Note: '''
+  **SEPARATE COLLECTION FOR USER PURCHASES:**
+  • Individual ticket purchases (can grow to millions for large events)
+  • Enables independent queries (user tickets, event sales, analytics)
+  • Separate from embedded EventTickets (ticket types) in events collection
+  
+  **SCALABILITY:**
+  • NFL events: 100,000+ tickets per event
+  • Online events: Unlimited capacity
+  • Embedded would bloat event documents
   '''
 }
 
@@ -116,3 +140,5 @@ Ref: reviews.userId > users._id
 Ref: checkins.eventId > events._id
 Ref: checkins.userId > users._id
 Ref: checkins.venueId > venues._id
+Ref: tickets.eventId > events._id
+Ref: tickets.userId > users._id

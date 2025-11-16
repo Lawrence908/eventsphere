@@ -328,6 +328,30 @@ db.createCollection("checkins", {
     }
 });
 
+// Tickets Collection - Individual user ticket purchases (separate from embedded EventTickets)
+// Note: Embedded EventTickets (ticket types/tiers) are in events collection
+// This collection stores actual user purchases for scalability
+db.createCollection("tickets", {
+    validator: {
+        $jsonSchema: {
+            bsonType: "object",
+            required: ["eventId", "userId", "pricePaid", "status", "purchasedAt", "schemaVersion", "createdAt"],
+            properties: {
+                eventId: { bsonType: "objectId" },
+                userId: { bsonType: "objectId" },
+                pricePaid: { bsonType: ["double", "int", "long"], minimum: 0 },
+                status: { bsonType: "string", enum: ["active", "cancelled", "used", "refunded"] },
+                ticketTier: { bsonType: ["string", "null"] },
+                purchasedAt: { bsonType: "date" },
+                schemaVersion: { bsonType: "string", enum: ["1.0"] },
+                createdAt: { bsonType: "date" }
+            }
+        }
+    }
+});
+
 print("All collections created successfully with schema validation!");
-print("Collections created: events, venues, users, reviews, checkins");
+print("Collections created: events, venues, users, reviews, checkins, tickets");
+print("Note: Embedded EventTickets (ticket types) are in events collection");
+print("      Separate tickets collection stores individual user purchases");
 print("Next step: Run create_indexes.js to create performance indexes");

@@ -36,12 +36,13 @@ EventSphere is a comprehensive MongoDB-based event management system that demons
 
 ### Key Achievements
 
-- **Database Design**: 5 collections with 47 strategic indexes optimized for sub-100ms query performance
+- **Database Design**: 6 collections with 24 strategic indexes optimized for sub-100ms query performance
 - **Advanced Patterns**: Polymorphic design, extended references, computed statistics, and schema versioning
 - **Data Volume**: 1000+ realistic sample records demonstrating production-scale data handling
 - **Query Complexity**: 25+ documented queries including complex aggregation pipelines
 - **Real-time Features**: WebSocket integration with MongoDB Change Streams
 - **Performance**: Comprehensive benchmarking with optimization recommendations
+- **Dual Ticket Architecture**: Embedded EventTickets (types) and separate Tickets collection (purchases)
 
 ### Technical Highlights
 
@@ -174,7 +175,8 @@ The database implements a carefully designed collection structure optimized for 
 #### 1. Events Collection (Primary)
 - **Purpose**: Core event catalog with polymorphic design
 - **Documents**: 1000+ events with diverse attributes
-- **Key Features**: GeoJSON locations, polymorphic event types, embedded tickets
+- **Key Features**: GeoJSON locations, polymorphic event types, embedded EventTickets (ticket types)
+- **Note**: Individual user purchases are in separate Tickets collection
 
 #### 2. Venues Collection
 - **Purpose**: Venue catalog with geospatial data
@@ -186,12 +188,18 @@ The database implements a carefully designed collection structure optimized for 
 - **Documents**: 2000+ users with realistic data
 - **Key Features**: Geospatial preferences, category interests, activity tracking
 
-#### 4. Checkins Collection (Bridge)
+#### 4. Tickets Collection (User Purchases)
+- **Purpose**: Individual user ticket purchases - separate collection for scalability
+- **Documents**: 5000+ ticket purchase records
+- **Key Features**: References events and users, purchase tracking, status management
+- **Architecture**: Separate from embedded EventTickets (ticket types) in events collection
+
+#### 5. Checkins Collection (Bridge)
 - **Purpose**: Many-to-many relationship for attendance tracking
 - **Documents**: 5000+ check-in records
 - **Key Features**: QR code support, location tracking, analytics metadata
 
-#### 5. Reviews Collection
+#### 6. Reviews Collection
 - **Purpose**: Event and venue review system
 - **Documents**: 3000+ reviews with ratings
 - **Key Features**: 1-5 star ratings, comment system, temporal tracking
@@ -936,7 +944,7 @@ Data Cache Hit Ratio: 94.3%
 
 **Solution**:
 - Analyzed query patterns to identify optimal compound indexes
-- Implemented strategic index design with 47 total indexes
+- Implemented strategic index design with 24 total indexes (4 per collection, 6 collections)
 - Regular monitoring of index usage and effectiveness
 
 **Result**: 98.7% index hit ratio with minimal write performance impact.
@@ -1181,7 +1189,7 @@ EventSphere successfully demonstrates comprehensive MongoDB expertise through a 
 #### Key Achievements
 
 **Technical Excellence**:
-- 5 collections with 47 strategic indexes
+- 6 collections with 24 strategic indexes
 - Sub-100ms query performance for common operations
 - 1000+ realistic sample records with proper relationships
 - 25+ documented queries including complex aggregations

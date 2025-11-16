@@ -434,6 +434,56 @@ db.checkins.insertMany([
     }
 ]);
 
+// ===== TICKETS SAMPLE DATA (User Purchases) =====
+print("Inserting sample ticket purchases...");
+
+db.tickets.insertMany([
+    {
+        _id: ObjectId("68ddb640c00b1dff0580a001"),
+        eventId: ObjectId("68ddb640c00b1dff057fbefc"),
+        userId: ObjectId("68ddb640c00b1dff057fb511"),
+        pricePaid: 99.00,
+        status: "active",
+        ticketTier: "Early Bird",
+        purchasedAt: ISODate("2025-09-25T10:30:00.000Z"),
+        schemaVersion: "1.0",
+        createdAt: ISODate("2025-09-25T10:30:00.000Z")
+    },
+    {
+        _id: ObjectId("68ddb640c00b1dff0580a002"),
+        eventId: ObjectId("68ddb640c00b1dff057fbefc"),
+        userId: ObjectId("68ddb640c00b1dff057fb511"),
+        pricePaid: 135.00,
+        status: "active",
+        ticketTier: "General Admission",
+        purchasedAt: ISODate("2025-09-28T14:15:00.000Z"),
+        schemaVersion: "1.0",
+        createdAt: ISODate("2025-09-28T14:15:00.000Z")
+    },
+    {
+        _id: ObjectId("68ddb640c00b1dff0580a003"),
+        eventId: ObjectId("68ddb640c00b1dff057fbe02"),
+        userId: ObjectId("68ddb640c00b1dff057fb51e"),
+        pricePaid: 25.00,
+        status: "used",
+        ticketTier: "General Admission",
+        purchasedAt: ISODate("2025-10-10T16:20:00.000Z"),
+        schemaVersion: "1.0",
+        createdAt: ISODate("2025-10-10T16:20:00.000Z")
+    },
+    {
+        _id: ObjectId("68ddb640c00b1dff0580a004"),
+        eventId: ObjectId("68ddb640c00b1dff057fbe03"),
+        userId: ObjectId("68ddb640c00b1dff057fb511"),
+        pricePaid: 0.00,
+        status: "active",
+        ticketTier: "Free Registration",
+        purchasedAt: ISODate("2025-10-05T09:00:00.000Z"),
+        schemaVersion: "1.0",
+        createdAt: ISODate("2025-10-05T09:00:00.000Z")
+    }
+]);
+
 print("\nSample data loaded successfully!");
 print("=".repeat(50));
 print("SAMPLE DATA SUMMARY:");
@@ -443,6 +493,7 @@ print("Venues: 2 (conference center, park)");
 print("Users: 2 (with preferences and locations)");
 print("Reviews: 3 (events and venues)");
 print("Check-ins: 2 (different methods and devices)");
+print("Tickets: 4 (user purchases - separate collection)");
 print("=".repeat(50));
 print("Features Demonstrated:");
 print("• Polymorphic event types (hybrid, recurring, virtual)");
@@ -452,5 +503,8 @@ print("• Extended reference pattern (venue data in events)");
 print("• Computed pattern (pre-calculated statistics)");
 print("• Schema versioning (all documents v1.0)");
 print("• Bridge collection pattern (checkins)");
+print("• Dual ticket architecture:");
+print("  - Embedded EventTickets (ticket types in events)");
+print("  - Separate Tickets collection (user purchases)");
 print("=".repeat(50));
 print("Ready for query demonstrations and testing!");

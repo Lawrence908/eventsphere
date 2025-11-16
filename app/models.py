@@ -393,6 +393,41 @@ class Review(ReviewBase):
 # (Removed duplicate alternative Review models with review_text/title fields to match tests using 'comment')
 
 
+# Ticket Models (User Purchases - Separate Collection)
+class TicketBase(BaseModel):
+    """Base ticket model for user purchases"""
+    eventId: PyObjectId = Field(..., description="Reference to events collection")
+    userId: PyObjectId = Field(..., description="Reference to users collection")
+    pricePaid: float = Field(..., ge=0, description="Price paid for the ticket")
+    status: Literal["active", "cancelled", "used", "refunded"] = Field(default="active", description="Ticket status")
+    ticketTier: Optional[str] = Field(None, max_length=50, description="Ticket tier (e.g., Early Bird, VIP)")
+    purchasedAt: datetime = Field(..., description="When the ticket was purchased")
+    schemaVersion: str = Field(default="1.0", description="Schema versioning")
+
+
+class TicketCreate(TicketBase):
+    """Model for creating ticket purchases"""
+    pass
+
+
+class TicketUpdate(BaseModel):
+    """Model for updating ticket purchases"""
+    status: Optional[Literal["active", "cancelled", "used", "refunded"]] = None
+    ticketTier: Optional[str] = Field(None, max_length=50)
+
+
+class Ticket(TicketBase):
+    """Complete ticket model with database fields"""
+    id: Optional[PyObjectId] = Field(default_factory=PyObjectId, alias="_id")
+    createdAt: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+
+    model_config = ConfigDict(
+        populate_by_name=True,
+        arbitrary_types_allowed=True,
+        json_encoders={ObjectId: str},
+    )
+
+
 # Query Models
 class EventsNearbyQuery(BaseModel):
     """Query parameters for nearby events"""

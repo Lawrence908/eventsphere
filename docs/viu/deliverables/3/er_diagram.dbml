@@ -51,7 +51,19 @@ Table EVENT_TICKET {
   event_id ObjectId [pk]
   tier string [not null]
   
-  Note: 'Embedded in EVENT collection for performance optimization'
+  Note: 'Embedded in EVENT collection - Ticket types/tiers (Early Bird, VIP, etc.)'
+}
+
+Table TICKET {
+  ticket_id ObjectId [pk]
+  event_id ObjectId
+  user_id ObjectId
+  pricePaid float
+  status string
+  ticketTier string
+  purchasedAt datetime
+  
+  Note: 'Separate collection for individual user ticket purchases - Can scale to millions'
 }
 
 Table EVENT_ATTENDEE {
@@ -157,6 +169,9 @@ Ref: EVENT.event_id < CHECKIN.event_id
 Ref: VENUE.venue_id < CHECKIN.venue_id
 
 Ref: VENUE.venue_id < EVENT.venue_id
+
+Ref: USER.user_id < TICKET.user_id
+Ref: EVENT.event_id < TICKET.event_id
 
 // Embedded document relationships (1:1)
 Ref: USER.user_id - USER_PROFILE.user_id

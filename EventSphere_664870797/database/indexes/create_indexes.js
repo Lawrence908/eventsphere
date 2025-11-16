@@ -1,9 +1,9 @@
 // Optimized Strategic Indexes for EventSphere - Performance Optimization
 // Student ID: 664 870 797 - Chris Lawrence
 // CSCI 485 - Fall 2025
-// Optimized Strategy: 20 indexes (4 per collection) for maximum efficiency
+// Optimized Strategy: 24 indexes (4 per collection, 6 collections) for maximum efficiency
 
-print("Creating optimized strategic indexes for EventSphere (4 per collection)...");
+print("Creating optimized strategic indexes for EventSphere (4 per collection, 6 collections)...");
 
 // ===== EVENTS COLLECTION INDEXES (4 indexes) =====
 
@@ -130,6 +130,30 @@ print("Creating user preferences location geospatial index...");
 db.users.createIndex({ "profile.preferences.location": "2dsphere" }); 
 // Location-based user discovery for recommendation engine
 
+// ===== TICKETS COLLECTION INDEXES (4 indexes) =====
+
+print("Creating indexes for tickets collection...");
+
+// 1) Event ID + User ID compound index (HIGHEST PRIORITY)
+print("Creating event ID + user ID compound index...");
+db.tickets.createIndex({ eventId: 1, userId: 1 }); 
+// User ticket purchases per event - most common query pattern
+
+// 2) User ID index (HIGH PRIORITY)
+print("Creating user ID index...");
+db.tickets.createIndex({ userId: 1 }); 
+// All tickets purchased by a user - "My Tickets" page
+
+// 3) Event ID index (HIGH PRIORITY)
+print("Creating event ID index...");
+db.tickets.createIndex({ eventId: 1 }); 
+// All tickets sold for an event - sales analytics
+
+// 4) Status + Purchased At compound index (MEDIUM PRIORITY)
+print("Creating status + purchased at compound index...");
+db.tickets.createIndex({ status: 1, purchasedAt: 1 }); 
+// Ticket status analytics and chronological sorting
+
 // ===== PERFORMANCE SUMMARY =====
 
 print("\nOptimized index creation completed!");
@@ -141,8 +165,9 @@ print("Venues Collection: 4 indexes (geospatial, type+capacity, type+rating, typ
 print("Reviews Collection: 4 indexes (eventId, venueId, eventId+rating, userId)");
 print("Checkins Collection: 4 indexes (eventId+userId unique, eventId, userId, venueId+time)");
 print("Users Collection: 4 indexes (email unique, createdAt, lastLogin, location)");
+print("Tickets Collection: 4 indexes (eventId+userId, userId, eventId, status+purchasedAt)");
 print("=".repeat(60));
-print("Total Strategic Indexes: 20 (4 per collection)");
+print("Total Strategic Indexes: 24 (4 per collection, 6 collections)");
 print("Storage Optimization: 35% reduction from comprehensive strategy");
 print("Expected Query Performance: <50ms for critical operations");
 print("=".repeat(60));
@@ -160,6 +185,12 @@ print("• Use geospatial queries for location-based discovery");
 print("• Leverage text search for keyword-based event finding");
 print("• Utilize compound indexes for multi-field filtering");
 print("• Apply polymorphic indexes for type-specific queries");
+print("• Query tickets collection for user purchases and sales analytics");
 print("• Monitor index usage for future optimization");
+
+print("\nTICKET ARCHITECTURE NOTES:");
+print("• Embedded EventTickets: Ticket types/tiers in events collection");
+print("• Separate Tickets Collection: Individual user purchases (scalable)");
+print("• Both patterns needed: Embedded for display, separate for analytics");
 
 print("\nReady for high-performance event management queries!");

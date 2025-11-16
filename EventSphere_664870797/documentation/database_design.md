@@ -22,11 +22,12 @@ This document outlines the complete database design, including collection schema
 
 ### Collection Architecture
 
-The database consists of 5 primary collections designed to handle complex relationships and high-performance queries:
+The database consists of 6 primary collections designed to handle complex relationships and high-performance queries:
 
-- **`events`** - Core event catalog with polymorphic event types
+- **`events`** - Core event catalog with polymorphic event types and embedded ticket types
 - **`venues`** - Venue information with geospatial data and polymorphic types  
 - **`users`** - User profiles with location-based preferences
+- **`tickets`** - Individual user ticket purchases (separate collection for scalability)
 - **`checkins`** - Bridge collection for attendance tracking and analytics
 - **`reviews`** - Event and venue review system with rating aggregation
 
@@ -183,6 +184,57 @@ The `checkins` collection serves as a bridge table creating a many-to-many relat
   }
 }
 ```
+
+### Tickets Collection
+
+**Purpose**: Individual user ticket purchases - separate collection for scalability.
+
+**Key Features**:
+- Separate collection from embedded EventTickets (ticket types)
+- Scales to millions of purchases for large events (NFL, concerts, online events)
+- Enables independent queries (user tickets, event sales analytics)
+- References both events and users collections
+
+**Architecture Decision - Dual Ticket Pattern**:
+
+EventSphere implements a **dual ticket architecture** following MongoDB best practices:
+
+1. **Embedded EventTickets** (in `events` collection):
+   - Ticket types/tiers available for purchase (e.g., "Early Bird", "General Admission", "VIP")
+   - Small, bounded set (typically 1-5 ticket types per event)
+   - Always displayed with event details
+   - Contains pricing, availability, and sold counts
+   - **Why embedded?** Small size, always accessed with events, improves query performance
+
+2. **Separate Tickets Collection** (user purchases):
+   - Individual ticket purchases by users
+   - Can grow to millions of documents (e.g., 100,000+ tickets for NFL events)
+   - Enables independent queries:
+     - "All tickets purchased by user X"
+     - "All tickets sold for event Y"
+     - "Revenue analytics by event/venue/category"
+   - **Why separate?** Prevents document bloat, enables efficient queries, supports scalability
+
+**Sample Document**:
+```javascript
+{
+  "_id": ObjectId("68ddb640c00b1dff057fbf00"),
+  "eventId": ObjectId("68ddb640c00b1dff057fbefc"),
+  "userId": ObjectId("68ddb640c00b1dff057fbe00"),
+  "pricePaid": 75.00,
+  "status": "active",
+  "ticketTier": "VIP",
+  "purchasedAt": ISODate("2025-10-01T14:30:00.000Z"),
+  "schemaVersion": "1.0",
+  "createdAt": ISODate("2025-10-01T14:30:00.000Z")
+}
+```
+
+**Benefits of This Architecture**:
+- **Performance**: Event listings load quickly (embedded ticket types)
+- **Scalability**: Handles millions of purchases without bloating event documents
+- **Query Flexibility**: Independent queries for user tickets and sales analytics
+- **Industry Standard**: Matches patterns used by major ticketing platforms
 
 ### Venues Collection
 
