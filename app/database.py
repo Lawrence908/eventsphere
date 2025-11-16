@@ -22,6 +22,7 @@ class MongoDB:
         self.users: Optional[Collection] = None
         self.checkins: Optional[Collection] = None
         self.reviews: Optional[Collection] = None
+        self.tickets: Optional[Collection] = None
 
     def connect(self):
         """Connect to MongoDB and apply schema validation"""
@@ -35,6 +36,7 @@ class MongoDB:
         self.users = self.database.users
         self.checkins = self.database.checkins
         self.reviews = self.database.reviews
+        self.tickets = self.database.tickets
 
         # Apply schema validation to all collections
         self._apply_schema_validation()
@@ -86,6 +88,7 @@ class MongoDB:
             self.users = None
             self.checkins = None
             self.reviews = None
+            self.tickets = None
 
     def is_connected(self) -> bool:
         """Check if connected to MongoDB"""
@@ -159,9 +162,10 @@ class MongoDB:
             self.users.create_index([("profile.preferences.location", GEOSPHERE)], name="user_pref_location_2dsphere")
             print("✓ User indexes created")
 
-            # Check-ins and Reviews dedicated index suites
+            # Check-ins, Reviews, and Tickets dedicated index suites
             self._create_checkins_indexes()
             self._create_reviews_indexes()
+            self._create_tickets_indexes()
 
             print("✓ All indexes created successfully")
 
@@ -255,6 +259,30 @@ class MongoDB:
             
         except Exception as e:
             print(f"Warning: Error creating reviews indexes: {e}")
+
+    def _create_tickets_indexes(self):
+        """Create comprehensive indexes for tickets collection"""
+        try:
+            print("Creating tickets indexes...")
+            
+            # 1. Basic reference indexes
+            self.tickets.create_index([("eventId", 1)], name="eventId")
+            self.tickets.create_index([("userId", 1)], name="userId")
+            print("✓ Basic reference indexes created")
+            
+            # 2. Compound index for event-user lookups
+            self.tickets.create_index([("eventId", 1), ("userId", 1)], name="event_user")
+            print("✓ Compound index created")
+            
+            # 3. Status and time-based indexes for analytics
+            self.tickets.create_index([("status", 1), ("purchasedAt", 1)], name="status_purchased")
+            self.tickets.create_index([("purchasedAt", 1)], name="purchasedAt")
+            print("✓ Status and time-based indexes created")
+            
+            print("✓ All tickets indexes created successfully")
+            
+        except Exception as e:
+            print(f"Warning: Error creating tickets indexes: {e}")
 
 
 # Global MongoDB instance

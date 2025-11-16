@@ -1316,3 +1316,260 @@ def get_review_service():
     if _review_service is None:
         _review_service = ReviewService()
     return _review_service
+
+
+class AnalyticsService:
+    """Service class for analytics and performance metrics"""
+    
+    def __init__(self):
+        self.db = None
+    
+    def _ensure_db(self):
+        """Ensure database connection is established"""
+        if self.db is None:
+            self.db = get_mongodb()
+        return self.db
+    
+    def get_computed_stats_overview(self) -> dict[str, Any]:
+        """Get overview of computed stats from events and venues"""
+        db = self._ensure_db()
+        
+        # Aggregate computed stats from events
+        events_pipeline = [
+            {
+                "$group": {
+                    "_id": None,
+                    "totalRevenue": {"$sum": "$computedStats.totalRevenue"},
+                    "totalTicketsSold": {"$sum": "$computedStats.totalTicketsSold"},
+                    "totalReviews": {"$sum": "$computedStats.reviewCount"},
+                    "avgRating": {"$avg": "$computedStats.averageRating"},
+                    "avgAttendanceRate": {"$avg": "$computedStats.attendanceRate"},
+                    "eventsWithStats": {"$sum": 1}
+                }
+            }
+        ]
+        
+        events_stats = list(db.events.aggregate(events_pipeline))
+        events_summary = events_stats[0] if events_stats else {}
+        
+        # Aggregate computed stats from venues
+        venues_pipeline = [
+            {
+                "$group": {
+                    "_id": None,
+                    "totalRevenue": {"$sum": "$computedStats.revenueGenerated"},
+                    "totalEventsHosted": {"$sum": "$computedStats.totalEventsHosted"},
+                    "avgAttendance": {"$avg": "$computedStats.averageAttendance"},
+                    "venuesWithStats": {"$sum": 1}
+                }
+            }
+        ]
+        
+        venues_stats = list(db.venues.aggregate(venues_pipeline))
+        venues_summary = venues_stats[0] if venues_stats else {}
+        
+        return {
+            "events": {
+                "totalRevenue": events_summary.get("totalRevenue", 0),
+                "totalTicketsSold": events_summary.get("totalTicketsSold", 0),
+                "totalReviews": events_summary.get("totalReviews", 0),
+                "averageRating": round(events_summary.get("avgRating", 0), 2),
+                "averageAttendanceRate": round(events_summary.get("avgAttendanceRate", 0), 2),
+                "eventsWithStats": events_summary.get("eventsWithStats", 0)
+            },
+            "venues": {
+                "totalRevenue": venues_summary.get("totalRevenue", 0),
+                "totalEventsHosted": venues_summary.get("totalEventsHosted", 0),
+                "averageAttendance": round(venues_summary.get("avgAttendance", 0), 2),
+                "venuesWithStats": venues_summary.get("venuesWithStats", 0)
+            }
+        }
+    
+    def get_sample_computed_stats(self, limit: int = 5) -> dict[str, Any]:
+        """Get sample computed stats documents"""
+        db = self._ensure_db()
+        
+        # Get sample events with computed stats
+        sample_events = list(db.events.find(
+            {"computedStats": {"$exists": True}},
+            {"title": 1, "category": 1, "computedStats": 1}
+        ).limit(limit))
+        
+        # Get sample venues with computed stats
+        sample_venues = list(db.venues.find(
+            {"computedStats": {"$exists": True}},
+            {"name": 1, "venueType": 1, "computedStats": 1}
+        ).limit(limit))
+        
+        return {
+            "events": sample_events,
+            "venues": sample_venues
+        }
+    
+    def benchmark_query(self, query_name: str, query_func) -> dict[str, Any]:
+        """Benchmark a query and return execution time"""
+        import time
+        
+        start_time = time.time()
+        try:
+            result = query_func()
+            execution_time = (time.time() - start_time) * 1000  # Convert to milliseconds
+            return {
+                "query": query_name,
+                "executionTime": round(execution_time, 2),
+                "status": "success",
+                "resultCount": len(result) if isinstance(result, list) else 1
+            }
+        except Exception as e:
+            execution_time = (time.time() - start_time) * 1000
+            return {
+                "query": query_name,
+                "executionTime": round(execution_time, 2),
+                "status": "error",
+                "error": str(e)
+            }
+    
+    def get_query_performance_metrics(self) -> dict[str, Any]:
+        """Run performance benchmarks on common queries"""
+        db = self._ensure_db()
+        
+        benchmarks = []
+        
+        # 1. Geospatial Query (1000km radius from Vancouver)
+        def geospatial_query():
+            pipeline = [
+                {
+                    "$geoNear": {
+                        "near": {"type": "Point", "coordinates": [-123.9351, 49.0831]},
+                        "distanceField": "distance",
+                        "maxDistance": 100000,
+                        "spherical": True
+                    }
+                },
+                {"$limit": 10000}
+            ]
+            return list(db.events.aggregate(pipeline))
+        
+        benchmarks.append(self.benchmark_query("Geospatial Query (100km)", geospatial_query))
+        
+        # 2. Text Search Query
+        def text_search_query():
+            return list(db.events.find(
+                {"$text": {"$search": "technology"}},
+                {"score": {"$meta": "textScore"}}
+            ).sort([("score", {"$meta": "textScore"})]).limit(10000))
+        
+        benchmarks.append(self.benchmark_query("Text Search Query", text_search_query))
+        
+        # 3. Category Filter Query
+        def category_query():
+            return list(db.events.find({"category": "Technology"}).limit(10000))
+        
+        benchmarks.append(self.benchmark_query("Category Filter Query", category_query))
+        
+        # 4. Complex Aggregation Pipeline
+        def aggregation_query():
+            pipeline = [
+                {"$match": {"status": "published"}},
+                {
+                    "$group": {
+                        "_id": "$category",
+                        "count": {"$sum": 1},
+                        "avgPrice": {"$avg": "$price"},
+                        "totalRevenue": {"$sum": "$computedStats.totalRevenue"}
+                    }
+                },
+                {"$sort": {"count": -1}},
+                {"$limit": 10000}
+            ]
+            return list(db.events.aggregate(pipeline))
+        
+        benchmarks.append(self.benchmark_query("Complex Aggregation Pipeline", aggregation_query))
+        
+        # 5. Lookup Query (Checkins with Events)
+        def lookup_query():
+            pipeline = [
+                {"$match": {"eventId": {"$exists": True}}},
+                {
+                    "$lookup": {
+                        "from": "events",
+                        "localField": "eventId",
+                        "foreignField": "_id",
+                        "as": "event"
+                    }
+                },
+                {"$unwind": "$event"},
+                {"$limit": 10000}
+            ]
+            return list(db.checkins.aggregate(pipeline))
+        
+        benchmarks.append(self.benchmark_query("Lookup Query (Checkins → Events)", lookup_query))
+        
+        # 6. Index Usage Query (ticketId lookup)
+        def ticket_lookup_query():
+            return list(db.checkins.find({"ticketId": {"$exists": True, "$ne": None}}).limit(10000))
+        
+        benchmarks.append(self.benchmark_query("Ticket Relationship Query", ticket_lookup_query))
+        
+        successful_benchmarks = [b for b in benchmarks if b["status"] == "success"]
+        average_time = 0
+        if successful_benchmarks:
+            average_time = round(sum(b["executionTime"] for b in successful_benchmarks) / len(successful_benchmarks), 2)
+        
+        return {
+            "benchmarks": benchmarks,
+            "averageTime": average_time
+        }
+    
+    def get_collection_stats(self) -> dict[str, Any]:
+        """Get collection statistics"""
+        db = self._ensure_db()
+        
+        collections = ["events", "venues", "users", "tickets", "checkins", "reviews"]
+        stats = {}
+        
+        for collection_name in collections:
+            collection = getattr(db, collection_name)
+            stats[collection_name] = {
+                "count": collection.count_documents({}),
+                "size": collection.estimated_document_count()
+            }
+        
+        return stats
+    
+    def get_index_info(self) -> dict[str, Any]:
+        """Get index information for all collections"""
+        db = self._ensure_db()
+        
+        collections = ["events", "venues", "users", "tickets", "checkins", "reviews"]
+        index_info = {}
+        
+        for collection_name in collections:
+            collection = getattr(db, collection_name)
+            indexes = list(collection.list_indexes())
+            index_info[collection_name] = {
+                "count": len(indexes),
+                "indexes": [
+                    {
+                        "name": idx.get("name", "unknown"),
+                        "key": idx.get("key", {}),
+                        "unique": idx.get("unique", False),
+                        "type": "2dsphere" if "2dsphere" in str(idx.get("key", {})) else 
+                                "text" if "text" in str(idx.get("key", {})) else "standard"
+                    }
+                    for idx in indexes
+                ]
+            }
+        
+        return index_info
+
+
+# Global analytics service instance
+_analytics_service = None
+
+def get_analytics_service():
+    """Get analytics service instance (lazy loaded)"""
+    global _analytics_service
+    if _analytics_service is None:
+        _analytics_service = AnalyticsService()
+    return _analytics_service

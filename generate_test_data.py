@@ -598,8 +598,18 @@ def generate_users(count: int = 2000) -> List[Dict[str, Any]]:
     
     return users
 
-def generate_checkin(userId: str, eventId: str, event_start: datetime, event_end: datetime, event_location: Dict[str, Any] = None) -> Dict[str, Any]:
-    """Generate a single check-in with realistic data"""
+def generate_checkin(userId: str, eventId: str, event_start: datetime, event_end: datetime, event_location: Dict[str, Any] = None, ticketId: str = None, ticketTier: str = None) -> Dict[str, Any]:
+    """Generate a single check-in with realistic data
+    
+    Args:
+        userId: User ID for the checkin
+        eventId: Event ID for the checkin
+        event_start: Event start time
+        event_end: Event end time
+        event_location: Event location (optional)
+        ticketId: Optional ticket ID if checkin is for a purchased ticket
+        ticketTier: Optional ticket tier (used if ticketId provided, or for free events)
+    """
     # Check-in time is typically around event start time
     checkInTime = event_start + timedelta(minutes=random.randint(-30, 60))
     
@@ -626,14 +636,25 @@ def generate_checkin(userId: str, eventId: str, event_start: datetime, event_end
         checkin_lng = random.uniform(-180, 180)
         checkin_lat = random.uniform(-90, 90)
     
+    # Determine ticket tier: use provided tier, or generate one if no ticket
+    if ticketTier:
+        final_ticket_tier = ticketTier
+    elif ticketId:
+        # If ticketId exists but no tier provided, we'll look it up or use a default
+        final_ticket_tier = random.choice(["General Admission", "VIP", "Early Bird"])
+    else:
+        # No ticket - could be free event, walk-in, or staff
+        final_ticket_tier = random.choice(["General Admission", "VIP", "Early Bird"]) if random.random() < 0.5 else None
+    
     checkin = {
         "eventId": ObjectId(eventId),
         "userId": ObjectId(userId),
         "venueId": ObjectId(),  # Placeholder - would need actual venueId
+        "ticketId": ObjectId(ticketId) if ticketId else None,  # Link to ticket if exists
         "checkInTime": checkInTime,
         "qrCode": f"QR-{random.randint(100000, 999999)}",
         "schemaVersion": "1.0",  # Schema versioning
-        "ticketTier": random.choice(["General Admission", "VIP", "Early Bird"]) if random.random() < 0.7 else None,
+        "ticketTier": final_ticket_tier,  # Denormalized for performance, or for checkins without tickets
         "checkInMethod": random.choice(["qrCode", "manual", "mobile_app"]),
         "location": {
             "type": "Point",
@@ -650,10 +671,26 @@ def generate_checkin(userId: str, eventId: str, event_start: datetime, event_end
     
     return checkin
 
-def generate_checkins(users: List[Dict[str, Any]], events: List[Dict[str, Any]], checkins_per_user: float = 2.5) -> List[Dict[str, Any]]:
-    """Generate check-ins for users and events"""
+def generate_checkins(users: List[Dict[str, Any]], events: List[Dict[str, Any]], tickets: List[Dict[str, Any]] = None, checkins_per_user: float = 2.5) -> List[Dict[str, Any]]:
+    """Generate check-ins for users and events, optionally linking to tickets
+    
+    Args:
+        users: List of user documents
+        events: List of event documents
+        tickets: Optional list of ticket documents to link checkins to
+        checkins_per_user: Average number of checkins per user
+    """
     print(f"Generating check-ins for {len(users)} users and {len(events)} events...")
     checkins = []
+    
+    # Create a lookup: (eventId, userId) -> ticket
+    ticket_lookup = {}
+    if tickets:
+        for ticket in tickets:
+            key = (str(ticket["eventId"]), str(ticket["userId"]))
+            # Use first matching ticket (user might have multiple tickets for same event)
+            if key not in ticket_lookup:
+                ticket_lookup[key] = ticket
     
     for i, user in enumerate(users):
         if (i + 1) % 200 == 0:
@@ -666,12 +703,22 @@ def generate_checkins(users: List[Dict[str, Any]], events: List[Dict[str, Any]],
         user_events = random.sample(events, min(num_checkins, len(events)))
         
         for event in user_events:
+            # Try to find a matching ticket for this user+event
+            ticket_key = (str(event["_id"]), str(user["_id"]))
+            matching_ticket = ticket_lookup.get(ticket_key)
+            
+            # 70% chance checkin is for a purchased ticket (if ticket exists)
+            # 30% chance it's a walk-in/free event checkin
+            use_ticket = matching_ticket and random.random() < 0.7
+            
             checkin = generate_checkin(
                 user["_id"],  # Use actual user _id
                 event["_id"],  # Use actual event _id
                 event["startDate"],
                 event["endDate"],
-                event.get("location")  # Pass event location
+                event.get("location"),  # Pass event location
+                ticketId=str(matching_ticket["_id"]) if use_ticket else None,
+                ticketTier=matching_ticket.get("ticketTier") if use_ticket else None
             )
             # Add _id for MongoDB compatibility
             checkin["_id"] = ObjectId()

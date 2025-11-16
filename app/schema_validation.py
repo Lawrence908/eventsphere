@@ -527,6 +527,60 @@ def validate_coordinate_bounds(coordinates: list[float]) -> bool:
     return True
 
 
+def get_tickets_schema() -> Dict[str, Any]:
+    """JSON Schema validation for tickets collection"""
+    return {
+        "$jsonSchema": {
+            "bsonType": "object",
+            "required": ["eventId", "userId", "pricePaid", "status", "purchasedAt", "createdAt"],
+            "properties": {
+                "eventId": {
+                    "bsonType": "objectId",
+                    "description": "Reference to events collection"
+                },
+                "userId": {
+                    "bsonType": "objectId",
+                    "description": "Reference to users collection"
+                },
+                "pricePaid": {
+                    "bsonType": "double",
+                    "minimum": 0,
+                    "description": "Price paid for the ticket"
+                },
+                "status": {
+                    "bsonType": "string",
+                    "enum": ["active", "cancelled", "used"],
+                    "description": "Ticket status"
+                },
+                "ticketTier": {
+                    "bsonType": ["string", "null"],
+                    "maxLength": 50,
+                    "description": "Ticket tier purchased (e.g., Early Bird, VIP, General Admission)"
+                },
+                "purchasedAt": {
+                    "bsonType": "date",
+                    "description": "Purchase timestamp"
+                },
+                "schemaVersion": {
+                    "bsonType": ["string", "null"],
+                    "description": "Schema version for migration support"
+                },
+                "createdAt": {
+                    "bsonType": "date",
+                    "description": "Record creation timestamp"
+                }
+            },
+            "additionalProperties": False,
+            "patternProperties": {
+                "^_id$": {
+                    "bsonType": "objectId",
+                    "description": "MongoDB ObjectId"
+                }
+            }
+        }
+    }
+
+
 def get_reviews_schema() -> Dict[str, Any]:
     """JSON Schema validation for reviews collection"""
     return {
@@ -584,6 +638,7 @@ def get_all_schemas() -> Dict[str, Dict[str, Any]]:
         "events": get_events_schema(),
         "venues": get_venues_schema(),
         "users": get_users_schema(),
+        "tickets": get_tickets_schema(),
         "checkins": get_checkins_schema(),
         "reviews": get_reviews_schema()
     }

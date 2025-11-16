@@ -311,9 +311,10 @@ class CheckinBase(BaseModel):
     eventId: PyObjectId
     userId: PyObjectId
     venueId: Optional[PyObjectId] = Field(None, description="Reference to venues (denormalized for analytics)")
+    ticketId: Optional[PyObjectId] = Field(None, description="Reference to tickets collection (if checkin is for a purchased ticket)")
     qrCode: str = Field(..., min_length=1, max_length=100)
     schemaVersion: str = Field(default="1.0", description="Schema versioning")
-    ticketTier: Optional[str] = Field(None, max_length=50)
+    ticketTier: Optional[str] = Field(None, max_length=50, description="Ticket tier (denormalized for performance, or for checkins without tickets)")
     checkInMethod: Optional[str] = Field(None, max_length=50, description="qrCode, manual, mobileApp")
     location: Optional[EventLocation] = None
     metadata: Optional[CheckinMetadata] = None
@@ -327,6 +328,7 @@ class CheckinCreate(CheckinBase):
 class CheckinUpdate(BaseModel):
     """Model for updating checkins"""
     qrCode: Optional[str] = Field(None, min_length=1, max_length=100)
+    ticketId: Optional[PyObjectId] = None
     ticketTier: Optional[str] = Field(None, max_length=50)
     checkInMethod: Optional[str] = Field(None, max_length=50)
     location: Optional[EventLocation] = None

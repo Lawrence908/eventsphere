@@ -7,7 +7,7 @@ from pydantic import ValidationError
 
 from .database import mongodb
 from .models import EventCreate, EventsNearbyQuery, EventUpdate, CheckinCreate, CheckinUpdate
-from .services import get_event_service, get_checkin_service
+from .services import get_event_service, get_checkin_service, get_analytics_service
 from .realtime import init_realtime
 from .config import Config
 
@@ -53,6 +53,29 @@ def create_app():
     def realtime_demo():
         """Real-time events demo page"""
         return render_template("realtime_demo.html")
+    
+    @app.route("/analytics")
+    def analytics():
+        """Analytics dashboard page"""
+        try:
+            analytics_service = get_analytics_service()
+            computed_stats = analytics_service.get_computed_stats_overview()
+            sample_stats = analytics_service.get_sample_computed_stats()
+            query_performance = analytics_service.get_query_performance_metrics()
+            collection_stats = analytics_service.get_collection_stats()
+            index_info = analytics_service.get_index_info()
+            
+            return render_template(
+                "analytics.html",
+                computed_stats=computed_stats,
+                sample_stats=sample_stats,
+                query_performance=query_performance,
+                collection_stats=collection_stats,
+                index_info=index_info
+            )
+        except Exception as e:
+            flash(f"Error loading analytics: {str(e)}", "error")
+            return render_template("analytics.html", error=str(e))
 
     @app.route("/events")
     def events_list():
@@ -521,6 +544,41 @@ def create_app():
     def internal_error(error):
         return render_template("500.html"), 500
 
+    # Template filters
+    @app.template_filter('format_number')
+    def format_number_filter(value):
+        """Format number with commas"""
+        try:
+            return f"{int(value):,}"
+        except (ValueError, TypeError):
+            return str(value)
+    
+    @app.template_filter('tojson')
+    def tojson_filter(obj, *args, **kwargs):
+        """Convert object to JSON string
+        
+        Args:
+            obj: Object to convert to JSON
+            *args: Optional positional argument for indent (first arg is indent value)
+            **kwargs: Optional keyword arguments (not used, but kept for compatibility)
+        """
+        import json
+        from bson import ObjectId
+        from datetime import datetime
+        
+        # Get indent from args or default to 2
+        indent = args[0] if args else 2
+        
+        def json_serial(obj):
+            """JSON serializer for objects not serializable by default json code"""
+            if isinstance(obj, ObjectId):
+                return str(obj)
+            if isinstance(obj, datetime):
+                return obj.isoformat()
+            raise TypeError(f"Type {type(obj)} not serializable")
+        
+        return json.dumps(obj, indent=indent, default=json_serial)
+    
     return app, socketio
 
 
