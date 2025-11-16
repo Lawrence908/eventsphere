@@ -1,0 +1,1078 @@
+{
+  "collections": {
+    "EventSphere.checkins": {
+      "ns": "EventSphere.checkins",
+      "jsonSchema": {
+        "bsonType": "object",
+        "required": [
+          "_id",
+          "checkInMethod",
+          "checkInTime",
+          "createdAt",
+          "eventId",
+          "location",
+          "metadata",
+          "qrCode",
+          "schemaVersion",
+          "ticketTier",
+          "updatedAt",
+          "userId",
+          "venueId"
+        ],
+        "properties": {
+          "_id": {
+            "bsonType": "objectId"
+          },
+          "checkInMethod": {
+            "bsonType": "string"
+          },
+          "checkInTime": {
+            "bsonType": "date"
+          },
+          "createdAt": {
+            "bsonType": "date"
+          },
+          "eventId": {
+            "bsonType": "objectId"
+          },
+          "location": {
+            "bsonType": "object",
+            "properties": {
+              "coordinates": {
+                "bsonType": "array",
+                "items": {
+                  "bsonType": "double"
+                }
+              },
+              "type": {
+                "bsonType": "string"
+              }
+            },
+            "required": [
+              "coordinates",
+              "type"
+            ]
+          },
+          "metadata": {
+            "bsonType": "object",
+            "properties": {
+              "deviceInfo": {
+                "bsonType": [
+                  "string",
+                  "null"
+                ]
+              },
+              "ipAddress": {
+                "bsonType": [
+                  "string",
+                  "null"
+                ]
+              },
+              "staffVerified": {
+                "bsonType": "bool"
+              }
+            },
+            "required": [
+              "deviceInfo",
+              "ipAddress",
+              "staffVerified"
+            ]
+          },
+          "qrCode": {
+            "bsonType": "string"
+          },
+          "schemaVersion": {
+            "bsonType": "string"
+          },
+          "ticketTier": {
+            "bsonType": [
+              "string",
+              "null"
+            ]
+          },
+          "updatedAt": {
+            "bsonType": "date"
+          },
+          "userId": {
+            "bsonType": "objectId"
+          },
+          "venueId": {
+            "bsonType": "objectId"
+          }
+        }
+      }
+    },
+    "EventSphere.events": {
+      "ns": "EventSphere.events",
+      "jsonSchema": {
+        "bsonType": "object",
+        "required": [
+          "_id",
+          "category",
+          "computedStats",
+          "createdAt",
+          "currency",
+          "currentAttendees",
+          "description",
+          "endDate",
+          "eventType",
+          "isFree",
+          "location",
+          "maxAttendees",
+          "metadata",
+          "organizer",
+          "price",
+          "schemaVersion",
+          "startDate",
+          "status",
+          "tags",
+          "tickets",
+          "title",
+          "updatedAt",
+          "venueId",
+          "venueReference"
+        ],
+        "properties": {
+          "_id": {
+            "bsonType": "objectId"
+          },
+          "category": {
+            "bsonType": "string"
+          },
+          "computedStats": {
+            "bsonType": "object",
+            "properties": {
+              "attendanceRate": {
+                "bsonType": "double"
+              },
+              "averageRating": {
+                "bsonType": "double"
+              },
+              "lastUpdated": {
+                "bsonType": "date"
+              },
+              "reviewCount": {
+                "bsonType": "int"
+              },
+              "totalRevenue": {
+                "bsonType": "int"
+              },
+              "totalTicketsSold": {
+                "bsonType": "int"
+              }
+            },
+            "required": [
+              "attendanceRate",
+              "averageRating",
+              "lastUpdated",
+              "reviewCount",
+              "totalRevenue",
+              "totalTicketsSold"
+            ]
+          },
+          "createdAt": {
+            "bsonType": "date"
+          },
+          "currency": {
+            "bsonType": "string"
+          },
+          "currentAttendees": {
+            "bsonType": "int"
+          },
+          "description": {
+            "bsonType": "string"
+          },
+          "endDate": {
+            "bsonType": "date"
+          },
+          "eventType": {
+            "bsonType": "string"
+          },
+          "hybridDetails": {
+            "bsonType": "object",
+            "properties": {
+              "inPersonCapacity": {
+                "bsonType": "int"
+              },
+              "virtual_meetingUrl": {
+                "bsonType": "string"
+              },
+              "virtualCapacity": {
+                "bsonType": "int"
+              }
+            },
+            "required": [
+              "inPersonCapacity",
+              "virtual_meetingUrl",
+              "virtualCapacity"
+            ]
+          },
+          "isFree": {
+            "bsonType": "bool"
+          },
+          "location": {
+            "bsonType": "object",
+            "properties": {
+              "coordinates": {
+                "bsonType": "array",
+                "items": {
+                  "bsonType": "double"
+                }
+              },
+              "type": {
+                "bsonType": "string"
+              }
+            },
+            "required": [
+              "coordinates",
+              "type"
+            ]
+          },
+          "maxAttendees": {
+            "bsonType": [
+              "int",
+              "null"
+            ]
+          },
+          "metadata": {
+            "bsonType": "object",
+            "properties": {
+              "accessibilityFeatures": {
+                "bsonType": "array",
+                "items": {
+                  "bsonType": "string"
+                }
+              },
+              "ageRestriction": {
+                "bsonType": [
+                  "null",
+                  "string"
+                ]
+              },
+              "dressCode": {
+                "bsonType": [
+                  "null",
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "accessibilityFeatures",
+              "ageRestriction",
+              "dressCode"
+            ]
+          },
+          "organizer": {
+            "bsonType": "string"
+          },
+          "price": {
+            "bsonType": "int"
+          },
+          "recurringDetails": {
+            "bsonType": "object",
+            "properties": {
+              "endRecurrence": {
+                "bsonType": "date"
+              },
+              "exceptions": {
+                "bsonType": "array",
+                "items": {
+                  "bsonType": "date"
+                }
+              },
+              "frequency": {
+                "bsonType": "string"
+              }
+            },
+            "required": [
+              "endRecurrence",
+              "exceptions",
+              "frequency"
+            ]
+          },
+          "schemaVersion": {
+            "bsonType": "string"
+          },
+          "startDate": {
+            "bsonType": "date"
+          },
+          "status": {
+            "bsonType": "string"
+          },
+          "tags": {
+            "bsonType": "array",
+            "items": {
+              "bsonType": "string"
+            }
+          },
+          "tickets": {
+            "bsonType": "array",
+            "items": {
+              "bsonType": "object",
+              "properties": {
+                "available": {
+                  "bsonType": "int"
+                },
+                "price": {
+                  "bsonType": [
+                    "int",
+                    "double"
+                  ]
+                },
+                "sold": {
+                  "bsonType": "int"
+                },
+                "tier": {
+                  "bsonType": "string"
+                }
+              },
+              "required": [
+                "available",
+                "price",
+                "sold",
+                "tier"
+              ]
+            }
+          },
+          "title": {
+            "bsonType": "string"
+          },
+          "updatedAt": {
+            "bsonType": "date"
+          },
+          "venueId": {
+            "bsonType": [
+              "objectId",
+              "null"
+            ]
+          },
+          "venueReference": {
+            "anyOf": [
+              {
+                "bsonType": "object",
+                "properties": {
+                  "capacity": {
+                    "bsonType": "int"
+                  },
+                  "city": {
+                    "bsonType": "string"
+                  },
+                  "name": {
+                    "bsonType": "string"
+                  },
+                  "venueType": {
+                    "bsonType": "string"
+                  }
+                },
+                "required": [
+                  "capacity",
+                  "city",
+                  "name",
+                  "venueType"
+                ]
+              },
+              {
+                "bsonType": "null"
+              }
+            ]
+          },
+          "virtualDetails": {
+            "bsonType": "object",
+            "properties": {
+              "meetingUrl": {
+                "bsonType": "string"
+              },
+              "platform": {
+                "bsonType": "string"
+              },
+              "recordingAvailable": {
+                "bsonType": "bool"
+              },
+              "timezone": {
+                "bsonType": "string"
+              }
+            },
+            "required": [
+              "meetingUrl",
+              "platform",
+              "recordingAvailable",
+              "timezone"
+            ]
+          }
+        }
+      }
+    },
+    "EventSphere.reviews": {
+      "ns": "EventSphere.reviews",
+      "jsonSchema": {
+        "bsonType": "object",
+        "required": [
+          "_id",
+          "comment",
+          "createdAt",
+          "eventId",
+          "rating",
+          "schemaVersion",
+          "updatedAt",
+          "userId"
+        ],
+        "properties": {
+          "_id": {
+            "bsonType": "objectId"
+          },
+          "comment": {
+            "bsonType": "string"
+          },
+          "createdAt": {
+            "bsonType": "date"
+          },
+          "eventId": {
+            "bsonType": "objectId"
+          },
+          "rating": {
+            "bsonType": "int"
+          },
+          "schemaVersion": {
+            "bsonType": "string"
+          },
+          "updatedAt": {
+            "bsonType": [
+              "null",
+              "date"
+            ]
+          },
+          "userId": {
+            "bsonType": "objectId"
+          }
+        }
+      }
+    },
+    "EventSphere.tickets": {
+      "ns": "EventSphere.tickets",
+      "jsonSchema": {
+        "bsonType": "object",
+        "required": [
+          "_id",
+          "createdAt",
+          "eventId",
+          "pricePaid",
+          "purchasedAt",
+          "status",
+          "userId"
+        ],
+        "properties": {
+          "_id": {
+            "bsonType": "objectId"
+          },
+          "createdAt": {
+            "bsonType": "date"
+          },
+          "eventId": {
+            "bsonType": "objectId"
+          },
+          "pricePaid": {
+            "bsonType": "int"
+          },
+          "purchasedAt": {
+            "bsonType": "date"
+          },
+          "status": {
+            "bsonType": "string"
+          },
+          "userId": {
+            "bsonType": "objectId"
+          }
+        }
+      }
+    },
+    "EventSphere.users": {
+      "ns": "EventSphere.users",
+      "jsonSchema": {
+        "bsonType": "object",
+        "required": [
+          "_id",
+          "createdAt",
+          "email",
+          "lastLogin",
+          "profile",
+          "schemaVersion",
+          "updatedAt"
+        ],
+        "properties": {
+          "_id": {
+            "bsonType": "objectId"
+          },
+          "createdAt": {
+            "bsonType": "date"
+          },
+          "email": {
+            "bsonType": "string"
+          },
+          "lastLogin": {
+            "bsonType": [
+              "date",
+              "null"
+            ]
+          },
+          "profile": {
+            "bsonType": "object",
+            "properties": {
+              "firstName": {
+                "bsonType": "string"
+              },
+              "lastName": {
+                "bsonType": "string"
+              },
+              "preferences": {
+                "bsonType": "object",
+                "properties": {
+                  "categories": {
+                    "bsonType": "array",
+                    "items": {
+                      "bsonType": "string"
+                    }
+                  },
+                  "location": {
+                    "bsonType": "object",
+                    "properties": {
+                      "coordinates": {
+                        "bsonType": "array",
+                        "items": {
+                          "bsonType": "double"
+                        }
+                      },
+                      "type": {
+                        "bsonType": "string"
+                      }
+                    },
+                    "required": [
+                      "coordinates",
+                      "type"
+                    ]
+                  },
+                  "radiusKm": {
+                    "bsonType": "int"
+                  }
+                },
+                "required": [
+                  "categories",
+                  "location",
+                  "radiusKm"
+                ]
+              }
+            },
+            "required": [
+              "firstName",
+              "lastName",
+              "preferences"
+            ]
+          },
+          "schemaVersion": {
+            "bsonType": "string"
+          },
+          "updatedAt": {
+            "bsonType": "date"
+          }
+        }
+      }
+    },
+    "EventSphere.venues": {
+      "ns": "EventSphere.venues",
+      "jsonSchema": {
+        "bsonType": "object",
+        "required": [
+          "_id",
+          "address",
+          "amenities",
+          "availability",
+          "capacity",
+          "computedStats",
+          "contact",
+          "createdAt",
+          "description",
+          "location",
+          "name",
+          "pricing",
+          "rating",
+          "reviewCount",
+          "schemaVersion",
+          "type",
+          "updatedAt",
+          "venueType"
+        ],
+        "properties": {
+          "_id": {
+            "bsonType": "objectId"
+          },
+          "address": {
+            "bsonType": "object",
+            "properties": {
+              "city": {
+                "bsonType": "string"
+              },
+              "country": {
+                "bsonType": "string"
+              },
+              "state": {
+                "bsonType": "string"
+              },
+              "street": {
+                "bsonType": "string"
+              },
+              "zipCode": {
+                "bsonType": "string"
+              }
+            },
+            "required": [
+              "city",
+              "country",
+              "state",
+              "street",
+              "zipCode"
+            ]
+          },
+          "amenities": {
+            "bsonType": "array",
+            "items": {
+              "bsonType": "string"
+            }
+          },
+          "availability": {
+            "bsonType": "object",
+            "properties": {
+              "friday": {
+                "bsonType": "object",
+                "properties": {
+                  "close": {
+                    "bsonType": "string"
+                  },
+                  "open": {
+                    "bsonType": "string"
+                  }
+                },
+                "required": [
+                  "close",
+                  "open"
+                ]
+              },
+              "monday": {
+                "bsonType": "object",
+                "properties": {
+                  "close": {
+                    "bsonType": "string"
+                  },
+                  "open": {
+                    "bsonType": "string"
+                  }
+                },
+                "required": [
+                  "close",
+                  "open"
+                ]
+              },
+              "saturday": {
+                "bsonType": "object",
+                "properties": {
+                  "close": {
+                    "bsonType": "string"
+                  },
+                  "open": {
+                    "bsonType": "string"
+                  }
+                },
+                "required": [
+                  "close",
+                  "open"
+                ]
+              },
+              "sunday": {
+                "bsonType": "object",
+                "properties": {
+                  "close": {
+                    "bsonType": "string"
+                  },
+                  "open": {
+                    "bsonType": "string"
+                  }
+                },
+                "required": [
+                  "close",
+                  "open"
+                ]
+              },
+              "thursday": {
+                "bsonType": "object",
+                "properties": {
+                  "close": {
+                    "bsonType": "string"
+                  },
+                  "open": {
+                    "bsonType": "string"
+                  }
+                },
+                "required": [
+                  "close",
+                  "open"
+                ]
+              },
+              "tuesday": {
+                "bsonType": "object",
+                "properties": {
+                  "close": {
+                    "bsonType": "string"
+                  },
+                  "open": {
+                    "bsonType": "string"
+                  }
+                },
+                "required": [
+                  "close",
+                  "open"
+                ]
+              },
+              "wednesday": {
+                "bsonType": "object",
+                "properties": {
+                  "close": {
+                    "bsonType": "string"
+                  },
+                  "open": {
+                    "bsonType": "string"
+                  }
+                },
+                "required": [
+                  "close",
+                  "open"
+                ]
+              }
+            },
+            "required": [
+              "friday",
+              "monday",
+              "saturday",
+              "sunday",
+              "thursday",
+              "tuesday",
+              "wednesday"
+            ]
+          },
+          "capacity": {
+            "bsonType": "int"
+          },
+          "computedStats": {
+            "bsonType": "object",
+            "properties": {
+              "averageAttendance": {
+                "bsonType": "int"
+              },
+              "lastEventDate": {
+                "bsonType": "date"
+              },
+              "lastUpdated": {
+                "bsonType": "date"
+              },
+              "revenueGenerated": {
+                "bsonType": "int"
+              },
+              "totalEventsHosted": {
+                "bsonType": "int"
+              }
+            },
+            "required": [
+              "averageAttendance",
+              "lastEventDate",
+              "lastUpdated",
+              "revenueGenerated",
+              "totalEventsHosted"
+            ]
+          },
+          "conferenceCenterDetails": {
+            "bsonType": "object",
+            "properties": {
+              "avEquipment": {
+                "bsonType": "array",
+                "items": {
+                  "bsonType": "string"
+                }
+              },
+              "breakoutRooms": {
+                "bsonType": "int"
+              },
+              "cateringAvailable": {
+                "bsonType": "bool"
+              }
+            },
+            "required": [
+              "avEquipment",
+              "breakoutRooms",
+              "cateringAvailable"
+            ]
+          },
+          "contact": {
+            "bsonType": "object",
+            "properties": {
+              "email": {
+                "bsonType": "string"
+              },
+              "phone": {
+                "bsonType": "string"
+              },
+              "website": {
+                "bsonType": "string"
+              }
+            },
+            "required": [
+              "email",
+              "phone",
+              "website"
+            ]
+          },
+          "createdAt": {
+            "bsonType": "date"
+          },
+          "description": {
+            "bsonType": "string"
+          },
+          "location": {
+            "bsonType": "object",
+            "properties": {
+              "coordinates": {
+                "bsonType": "array",
+                "items": {
+                  "bsonType": "double"
+                }
+              },
+              "type": {
+                "bsonType": "string"
+              }
+            },
+            "required": [
+              "coordinates",
+              "type"
+            ]
+          },
+          "name": {
+            "bsonType": "string"
+          },
+          "parkDetails": {
+            "bsonType": "object",
+            "properties": {
+              "outdoorSpace": {
+                "bsonType": "bool"
+              },
+              "parkingSpaces": {
+                "bsonType": "int"
+              },
+              "restroomFacilities": {
+                "bsonType": "bool"
+              }
+            },
+            "required": [
+              "outdoorSpace",
+              "parkingSpaces",
+              "restroomFacilities"
+            ]
+          },
+          "pricing": {
+            "bsonType": "object",
+            "properties": {
+              "currency": {
+                "bsonType": "string"
+              },
+              "dailyRate": {
+                "bsonType": "int"
+              },
+              "hourlyRate": {
+                "bsonType": "int"
+              }
+            },
+            "required": [
+              "currency",
+              "dailyRate",
+              "hourlyRate"
+            ]
+          },
+          "rating": {
+            "bsonType": "double"
+          },
+          "reviewCount": {
+            "bsonType": "int"
+          },
+          "schemaVersion": {
+            "bsonType": "string"
+          },
+          "type": {
+            "bsonType": "string"
+          },
+          "updatedAt": {
+            "bsonType": "date"
+          },
+          "venueType": {
+            "bsonType": "string"
+          },
+          "virtualSpaceDetails": {
+            "bsonType": "object",
+            "properties": {
+              "maxConcurrentUsers": {
+                "bsonType": "int"
+              },
+              "platform": {
+                "bsonType": "string"
+              },
+              "recordingCapability": {
+                "bsonType": "bool"
+              }
+            },
+            "required": [
+              "maxConcurrentUsers",
+              "platform",
+              "recordingCapability"
+            ]
+          }
+        }
+      }
+    }
+  },
+  "relationships": [
+    {
+      "id": "edc41008-3874-407f-af4e-c3113ec36174",
+      "relationship": [
+        {
+          "ns": "EventSphere.checkins",
+          "fields": [
+            "eventId"
+          ],
+          "cardinality": 1
+        },
+        {
+          "ns": "EventSphere.events",
+          "fields": [
+            "_id"
+          ],
+          "cardinality": 1
+        }
+      ],
+      "isInferred": true
+    },
+    {
+      "id": "2da6e851-2e65-4779-9425-b97209c1232c",
+      "relationship": [
+        {
+          "ns": "EventSphere.reviews",
+          "fields": [
+            "eventId"
+          ],
+          "cardinality": 1
+        },
+        {
+          "ns": "EventSphere.events",
+          "fields": [
+            "_id"
+          ],
+          "cardinality": 1
+        }
+      ],
+      "isInferred": true
+    },
+    {
+      "id": "98ae6581-bd88-4bf7-8812-e6e432de05ba",
+      "relationship": [
+        {
+          "ns": "EventSphere.tickets",
+          "fields": [
+            "eventId"
+          ],
+          "cardinality": 1
+        },
+        {
+          "ns": "EventSphere.events",
+          "fields": [
+            "_id"
+          ],
+          "cardinality": 1
+        }
+      ],
+      "isInferred": true
+    },
+    {
+      "id": "cc9aae9b-2147-4709-9ce4-add83d2a10cc",
+      "relationship": [
+        {
+          "ns": "EventSphere.checkins",
+          "fields": [
+            "userId"
+          ],
+          "cardinality": 1
+        },
+        {
+          "ns": "EventSphere.users",
+          "fields": [
+            "_id"
+          ],
+          "cardinality": 1
+        }
+      ],
+      "isInferred": true
+    },
+    {
+      "id": "589c087e-7446-45d3-854d-859cfe5e625b",
+      "relationship": [
+        {
+          "ns": "EventSphere.reviews",
+          "fields": [
+            "userId"
+          ],
+          "cardinality": 1
+        },
+        {
+          "ns": "EventSphere.users",
+          "fields": [
+            "_id"
+          ],
+          "cardinality": 1
+        }
+      ],
+      "isInferred": true
+    },
+    {
+      "id": "a82b5f2a-4d57-4f4c-b884-334b21dc1f3f",
+      "relationship": [
+        {
+          "ns": "EventSphere.tickets",
+          "fields": [
+            "userId"
+          ],
+          "cardinality": 1
+        },
+        {
+          "ns": "EventSphere.users",
+          "fields": [
+            "_id"
+          ],
+          "cardinality": 1
+        }
+      ],
+      "isInferred": true
+    },
+    {
+      "id": "a40d90a0-a2d6-4818-9323-6bd81f7a60ee",
+      "relationship": [
+        {
+          "ns": "EventSphere.events",
+          "fields": [
+            "venueId"
+          ],
+          "cardinality": 1
+        },
+        {
+          "ns": "EventSphere.venues",
+          "fields": [
+            "_id"
+          ],
+          "cardinality": 1
+        }
+      ],
+      "isInferred": true
+    }
+  ]
+}
