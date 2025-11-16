@@ -301,6 +301,7 @@ db.createCollection("checkins", {
                 eventId: { bsonType: "objectId" },
                 userId: { bsonType: "objectId" },
                 venueId: { bsonType: "objectId" },
+                ticketId: { bsonType: ["objectId", "null"] },
                 checkInTime: { bsonType: "date" },
                 qrCode: { bsonType: "string", minLength: 3 },
                 schemaVersion: { bsonType: "string", enum: ["1.0"] },

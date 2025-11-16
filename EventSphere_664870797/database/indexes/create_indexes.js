@@ -101,10 +101,10 @@ print("Creating user ID index...");
 db.checkins.createIndex({ userId: 1 }); 
 // User attendance history and analytics
 
-// 4) Venue ID + Check-in Time compound index (MEDIUM PRIORITY)
-print("Creating venue ID + check-in time compound index...");
-db.checkins.createIndex({ venueId: 1, checkInTime: 1 }); 
-// Venue time analytics and performance metrics
+// 4) Ticket ID index (MEDIUM PRIORITY)
+print("Creating ticket ID index...");
+db.checkins.createIndex({ ticketId: 1 }); 
+// Link checkins to tickets - "which ticket was used for this checkin?"
 
 // ===== USERS COLLECTION INDEXES (4 indexes) =====
 
@@ -163,7 +163,7 @@ print("=".repeat(60));
 print("Events Collection: 4 indexes (geospatial, text, category+date, eventType+date)");
 print("Venues Collection: 4 indexes (geospatial, type+capacity, type+rating, type)");
 print("Reviews Collection: 4 indexes (eventId, venueId, eventId+rating, userId)");
-print("Checkins Collection: 4 indexes (eventId+userId unique, eventId, userId, venueId+time)");
+print("Checkins Collection: 4 indexes (eventId+userId unique, eventId, userId, ticketId)");
 print("Users Collection: 4 indexes (email unique, createdAt, lastLogin, location)");
 print("Tickets Collection: 4 indexes (eventId+userId, userId, eventId, status+purchasedAt)");
 print("=".repeat(60));

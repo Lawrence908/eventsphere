@@ -393,10 +393,11 @@ db.checkins.insertMany([
         eventId: ObjectId("68ddb640c00b1dff057fbefc"),
         userId: ObjectId("68ddb640c00b1dff057fb511"),
         venueId: ObjectId("68ddb63fc00b1dff057fb398"),
+        ticketId: ObjectId("68ddb640c00b1dff0580a001"),  // Links to ticket purchase
         checkInTime: ISODate("2025-10-09T18:15:00.000Z"),
         qrCode: "QR-TECH2025-001",
         schemaVersion: "1.0",
-        ticketTier: "Early Bird",
+        ticketTier: "Early Bird",  // Denormalized for performance
         checkInMethod: "qrCode",
         location: {
             type: "Point",
@@ -415,10 +416,11 @@ db.checkins.insertMany([
         eventId: ObjectId("68ddb640c00b1dff057fbe02"),
         userId: ObjectId("68ddb640c00b1dff057fb51e"),
         venueId: ObjectId("68ddb63fc00b1dff057fb35f"),
+        ticketId: ObjectId("68ddb640c00b1dff0580a003"),  // Links to ticket purchase
         checkInTime: ISODate("2025-10-16T18:45:00.000Z"),
         qrCode: "QR-JAZZ-WED-001",
         schemaVersion: "1.0",
-        ticketTier: "General Admission",
+        ticketTier: "General Admission",  // Denormalized for performance
         checkInMethod: "mobileApp",
         location: {
             type: "Point",
@@ -506,5 +508,8 @@ print("• Bridge collection pattern (checkins)");
 print("• Dual ticket architecture:");
 print("  - Embedded EventTickets (ticket types in events)");
 print("  - Separate Tickets collection (user purchases)");
+print("• Checkin-Ticket relationship:");
+print("  - Checkins optionally link to tickets via ticketId");
+print("  - Supports both paid tickets and free/walk-in checkins");
 print("=".repeat(50));
 print("Ready for query demonstrations and testing!");
