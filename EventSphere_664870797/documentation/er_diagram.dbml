@@ -1,0 +1,298 @@
+// EventSphere Database Schema - Entity Relationship Diagram
+// Database Design: 6 Collections with Advanced NoSQL Patterns
+// Student: Chris Lawrence | ID: 664 870 797
+
+// ============================================
+// PRIMARY COLLECTIONS (Main Entities)
+// ============================================
+
+Table USER {
+  user_id ObjectId [pk]
+  email string [unique, not null]
+  schemaVersion string [not null, default: '1.0']
+  lastLogin datetime
+  createdAt datetime [not null]
+  updatedAt datetime [not null]
+  
+  Note: 'Main user collection with embedded profile data for performance'
+}
+
+Table EVENT {
+  event_id ObjectId [pk]
+  venue_id ObjectId [note: 'REFERENCE - Venue shared across events']
+  title string [not null]
+  description string [not null]
+  category string [not null]
+  eventType string [not null, note: 'POLYMORPHIC: inPerson, virtual, hybrid, recurring']
+  schemaVersion string [not null, default: '1.0']
+  startDate datetime [not null]
+  endDate datetime [not null]
+  organizer string [not null]
+  status string [not null]
+  createdAt datetime [not null]
+  updatedAt datetime [not null]
+  
+  Note: 'Main event collection with polymorphic type support and extended reference pattern'
+}
+
+Table VENUE {
+  venue_id ObjectId [pk]
+  name string [not null]
+  description string [not null]
+  venueType string [not null, note: 'POLYMORPHIC: conferenceCenter, park, restaurant, virtualSpace, stadium, theater']
+  schemaVersion string [not null, default: '1.0']
+  capacity int [not null]
+  rating double
+  reviewCount int
+  createdAt datetime [not null]
+  updatedAt datetime [not null]
+  
+  Note: 'Main venue collection with polymorphic type support and computed statistics'
+}
+
+Table TICKET {
+  ticket_id ObjectId [pk]
+  event_id ObjectId [not null]
+  user_id ObjectId [not null]
+  pricePaid int [not null]
+  status string [not null, note: 'active, cancelled, used, refunded']
+  ticketTier string [note: 'Matches embedded tickets[].tier in events']
+  purchasedAt datetime [not null]
+  schemaVersion string [not null, default: '1.0']
+  createdAt datetime [not null]
+  
+  Note: 'Separate collection for individual user ticket purchases - Can scale to millions (Dual Ticket Architecture)'
+}
+
+Table REVIEW {
+  review_id ObjectId [pk]
+  event_id ObjectId [note: 'Optional - either event_id or venue_id required']
+  venue_id ObjectId [note: 'Optional - either event_id or venue_id required']
+  user_id ObjectId [not null]
+  rating int [not null, note: '1-5 star rating']
+  comment string [not null]
+  schemaVersion string [not null, default: '1.0']
+  createdAt datetime [not null]
+  updatedAt datetime
+  
+  Note: 'Either event_id OR venue_id must be provided, not both - Supports reviews for events or venues'
+}
+
+Table CHECKIN {
+  checkin_id ObjectId [pk]
+  event_id ObjectId [not null]
+  user_id ObjectId [not null]
+  venue_id ObjectId [not null, note: 'Denormalized for analytics performance']
+  ticket_id ObjectId [note: 'Optional - links to purchased ticket (70% have tickets, 30% free/walk-ins)']
+  checkInTime datetime [not null]
+  checkInMethod string [not null]
+  qrCode string [not null, unique]
+  ticketTier string [note: 'Denormalized from ticket for performance']
+  schemaVersion string [not null, default: '1.0']
+  createdAt datetime [not null]
+  updatedAt datetime [not null]
+  
+  Note: 'Bridge collection for many-to-many relationship between users and events with analytics. Unique constraint on (event_id, user_id). Optionally links to tickets (70% have tickets, 30% are free/walk-ins)'
+}
+
+// ============================================
+// EMBEDDED SUBDOCUMENTS (Internal Entities)
+// ============================================
+
+Table USER_PROFILE {
+  user_id ObjectId [pk]
+  firstName string [not null]
+  lastName string [not null]
+  preferences json [not null, note: 'categories[], location GeoJSON Point, radiusKm']
+  
+  Note: 'Embedded in USER collection - User preferences for performance'
+}
+
+Table EVENT_TICKET {
+  event_id ObjectId [pk]
+  tier string [not null, note: 'Early Bird, VIP, General, etc.']
+  price int [not null]
+  available int [not null]
+  sold int [not null]
+  
+  Note: 'Embedded in EVENT collection - Ticket types/tiers (Early Bird, VIP, etc.) - Small, bounded array (1-5 types) - Always displayed with events'
+}
+
+Table EVENT_COMPUTED_STATS {
+  event_id ObjectId [pk]
+  totalTicketsSold int [not null]
+  totalRevenue int [not null]
+  attendanceRate double [not null]
+  reviewCount int [not null]
+  averageRating double [not null]
+  lastUpdated datetime [not null]
+  
+  Note: 'Embedded in EVENT collection - COMPUTED PATTERN - Pre-calculated for performance'
+}
+
+Table EVENT_VENUE_REFERENCE {
+  event_id ObjectId [pk]
+  name string [not null]
+  city string [not null]
+  capacity int [not null]
+  venueType string [not null]
+  
+  Note: 'Embedded in EVENT collection - EXTENDED REFERENCE PATTERN - Denormalized venue data for filtering performance'
+}
+
+Table VENUE_ADDRESS {
+  venue_id ObjectId [pk]
+  street string [not null]
+  city string [not null]
+  state string [not null]
+  zipCode string [not null]
+  country string [not null]
+  
+  Note: 'Embedded in VENUE collection - Always needed with venue'
+}
+
+Table VENUE_CONTACT {
+  venue_id ObjectId [pk]
+  email string [not null]
+  phone string [not null]
+  website string [not null]
+  
+  Note: 'Embedded in VENUE collection'
+}
+
+Table VENUE_PRICING {
+  venue_id ObjectId [pk]
+  hourlyRate int [not null]
+  dailyRate int [not null]
+  currency string [not null]
+  
+  Note: 'Embedded in VENUE collection'
+}
+
+Table VENUE_AVAILABILITY {
+  venue_id ObjectId [pk]
+  monday json [not null, note: 'open, close times']
+  tuesday json [not null]
+  wednesday json [not null]
+  thursday json [not null]
+  friday json [not null]
+  saturday json [not null]
+  sunday json [not null]
+  
+  Note: 'Embedded in VENUE collection - Weekly schedule'
+}
+
+Table VENUE_COMPUTED_STATS {
+  venue_id ObjectId [pk]
+  totalEventsHosted int [not null]
+  averageAttendance int [not null]
+  revenueGenerated int [not null]
+  lastEventDate datetime [not null]
+  lastUpdated datetime [not null]
+  
+  Note: 'Embedded in VENUE collection - COMPUTED PATTERN - Pre-calculated analytics'
+}
+
+// ============================================
+// POLYMORPHIC TYPE-SPECIFIC ENTITIES
+// ============================================
+
+Table VIRTUAL_DETAILS {
+  event_id ObjectId [pk]
+  meetingUrl string [not null]
+  platform string [not null]
+  recordingAvailable bool [not null]
+  timezone string [not null]
+  
+  Note: 'For virtual events only - POLYMORPHIC PATTERN'
+}
+
+Table RECURRING_DETAILS {
+  event_id ObjectId [pk]
+  frequency string [not null, note: 'daily, weekly, monthly, yearly']
+  endRecurrence datetime [not null]
+  exceptions array [note: 'Array of dates to skip']
+  
+  Note: 'For recurring events only - POLYMORPHIC PATTERN'
+}
+
+Table HYBRID_DETAILS {
+  event_id ObjectId [pk]
+  virtualCapacity int [not null]
+  inPersonCapacity int [not null]
+  virtualMeetingUrl string [not null]
+  
+  Note: 'For hybrid events only - POLYMORPHIC PATTERN'
+}
+
+Table EVENT_METADATA {
+  event_id ObjectId [pk]
+  accessibilityFeatures array
+  ageRestriction string
+  dressCode string
+  
+  Note: 'Embedded in EVENT collection'
+}
+
+Table CONFERENCE_CENTER_DETAILS {
+  venue_id ObjectId [pk]
+  breakoutRooms int [not null]
+  avEquipment array [not null]
+  cateringAvailable bool [not null]
+  
+  Note: 'For conference center venues only - POLYMORPHIC PATTERN'
+}
+
+Table PARK_DETAILS {
+  venue_id ObjectId [pk]
+  outdoorSpace bool [not null]
+  parkingSpaces int [not null]
+  restroomFacilities bool [not null]
+  
+  Note: 'For park venues only - POLYMORPHIC PATTERN'
+}
+
+Table VIRTUAL_SPACE_DETAILS {
+  venue_id ObjectId [pk]
+  platform string [not null]
+  maxConcurrentUsers int [not null]
+  recordingCapability bool [not null]
+  
+  Note: 'For virtual space venues only - POLYMORPHIC PATTERN'
+}
+
+// ============================================
+// RELATIONSHIPS
+// ============================================
+
+// Primary Relationships (1:Many)
+Ref: VENUE.venue_id < EVENT.venue_id
+Ref: EVENT.event_id < TICKET.event_id
+Ref: USER.user_id < TICKET.user_id
+Ref: EVENT.event_id < REVIEW.event_id
+Ref: VENUE.venue_id < REVIEW.venue_id
+Ref: USER.user_id < REVIEW.user_id
+Ref: EVENT.event_id < CHECKIN.event_id
+Ref: USER.user_id < CHECKIN.user_id
+Ref: VENUE.venue_id < CHECKIN.venue_id
+Ref: TICKET.ticket_id < CHECKIN.ticket_id
+
+// Embedded document relationships (1:1)
+Ref: USER.user_id - USER_PROFILE.user_id
+Ref: EVENT.event_id - EVENT_COMPUTED_STATS.event_id
+Ref: EVENT.event_id - EVENT_VENUE_REFERENCE.event_id
+Ref: EVENT.event_id - EVENT_TICKET.event_id
+Ref: VENUE.venue_id - VENUE_ADDRESS.venue_id
+Ref: VENUE.venue_id - VENUE_CONTACT.venue_id
+Ref: VENUE.venue_id - VENUE_PRICING.venue_id
+Ref: VENUE.venue_id - VENUE_AVAILABILITY.venue_id
+Ref: VENUE.venue_id - VENUE_COMPUTED_STATS.venue_id
+Ref: EVENT.event_id - EVENT_METADATA.event_id
+
+// Polymorphic relationships (1:0..1)
+Ref: EVENT.event_id - VIRTUAL_DETAILS.event_id
+Ref: EVENT.event_id - RECURRING_DETAILS.event_id
+Ref: EVENT.event_id - HYBRID_DETAILS.event_id
+Ref: VENUE.venue_id - CONFERENCE_CENTER_DETAILS.venue_id
+Ref: VENUE.venue_id - PARK_DETAILS.venue_id 
+Ref: VENUE.venue_id - VIRTUAL_SPACE_DETAILS.venue_id 

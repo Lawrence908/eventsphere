@@ -1,0 +1,296 @@
+// EventSphere MongoDB Collection Diagram
+// Database Design: 6 Collections with Advanced NoSQL Patterns
+// Student: Chris Lawrence | ID: 664 870 797
+
+Project EventSphere {
+  database_type: 'MongoDB'
+  Note: '''
+  # EventSphere MongoDB Collections
+  
+  ## Design Principles:
+  - **Embedding**: For data always accessed together (small, bounded arrays)
+  - **Referencing**: For shared data across documents (venues, users)
+  - **Polymorphic**: Type-specific fields for different event/venue types
+  - **Extended Reference**: Denormalized frequently-accessed data for performance
+  - **Computed Pattern**: Pre-calculated statistics to avoid expensive aggregations
+  - **Bridge Collection**: Many-to-many relationships with analytics support
+  - **Dual Ticket Architecture**: Embedded ticket types + separate purchases collection
+  '''
+}
+
+// ============================================
+// PRIMARY COLLECTIONS
+// ============================================
+
+Table events {
+  _id ObjectId [pk, note: 'Primary Key']
+  
+  // Core Fields
+  title string [not null]
+  description string [not null]
+  category string [not null]
+  eventType string [not null, note: 'POLYMORPHIC DISCRIMINATOR: inPerson, virtual, hybrid, recurring']
+  schemaVersion string [not null, default: '1.0']
+  
+  // Geospatial
+  location json [not null, note: 'GeoJSON Point for 2dsphere index']
+  
+  // Relationships
+  venueId ObjectId [note: 'REFERENCE - Venue shared across events']
+  venueReference json [note: 'EXTENDED REFERENCE PATTERN - Denormalized venue data (name, city, capacity, venueType) for filtering performance']
+  
+  // Embedded Subdocuments
+  tickets json [note: 'EMBEDDED - Ticket types/tiers array (Early Bird, VIP, etc.) - Small, bounded (1-5 types), always displayed with events']
+  computedStats json [note: 'EMBEDDED - COMPUTED PATTERN - Pre-calculated stats (totalTicketsSold, totalRevenue, attendanceRate, reviewCount, averageRating)']
+  
+  // Polymorphic Fields (Type-Specific)
+  virtualDetails json [note: 'OPTIONAL - Virtual event only: meetingUrl, platform, recordingAvailable, timezone']
+  hybridDetails json [note: 'OPTIONAL - Hybrid event only: virtualCapacity, inPersonCapacity, virtualMeetingUrl']
+  recurringDetails json [note: 'OPTIONAL - Recurring event only: frequency, endRecurrence, exceptions[]']
+  
+  // Metadata
+  startDate datetime [not null]
+  endDate datetime [not null]
+  organizer string [not null]
+  status string [not null]
+  tags array
+  createdAt datetime [not null]
+  updatedAt datetime [not null]
+  
+  Note: '''
+  **PATTERN 1: POLYMORPHIC DESIGN**
+  • eventType discriminator field (inPerson, virtual, hybrid, recurring)
+  • Type-specific details in separate optional fields (virtualDetails, hybridDetails, recurringDetails)
+  • Enables type-specific queries without schema changes
+  
+  **PATTERN 2: EXTENDED REFERENCE**
+  • venueId: Reference to venues collection (shared data)
+  • venueReference: Denormalized venue data embedded for filtering performance
+  • Benefits: Eliminates joins, enables "events at conference centers in Vancouver" queries
+  
+  **PATTERN 3: COMPUTED PATTERN**
+  • computedStats: Pre-calculated aggregations (totalTicketsSold, totalRevenue, averageRating)
+  • Updated via application triggers, not database queries
+  • Benefits: Eliminates expensive aggregations, sub-100ms dashboard queries
+  
+  **PATTERN 4: EMBEDDED TICKET TYPES**
+  • tickets[]: Small, bounded array of ticket types/tiers (Early Bird, VIP, General)
+  • Always displayed with event, improves query performance
+  • NOTE: Individual user purchases are in separate Tickets collection (see Dual Ticket Architecture)
+  '''
+}
+
+Table tickets {
+  _id ObjectId [pk, note: 'Primary Key']
+  
+  // Relationships
+  eventId ObjectId [not null, note: 'REFERENCE - Event ticket is for']
+  userId ObjectId [not null, note: 'REFERENCE - User who purchased ticket']
+  
+  // Ticket Data
+  pricePaid int [not null, note: 'Price paid for ticket (in cents)']
+  status string [not null, note: 'active, cancelled, used, refunded']
+  ticketTier string [note: 'Ticket tier purchased (e.g., Early Bird, VIP) - matches embedded tickets[].tier']
+  purchasedAt datetime [not null]
+  
+  // Metadata
+  schemaVersion string [not null, default: '1.0']
+  createdAt datetime [not null]
+  
+  Note: '''
+  **PATTERN 5: DUAL TICKET ARCHITECTURE**
+  
+  **Embedded EventTickets** (in events collection):
+  • Ticket types/tiers available for purchase (Early Bird, VIP, General)
+  • Small, bounded set (typically 1-5 ticket types per event)
+  • Always displayed with event details
+  • Contains: tier, price, available, sold counts
+  
+  **Separate Tickets Collection** (this collection):
+  • Individual user ticket purchases
+  • Can scale to millions (NFL events: 100,000+ tickets per event)
+  • Enables independent queries:
+    - "All tickets purchased by user X"
+    - "All tickets sold for event Y"
+    - "Revenue analytics by event/venue/category"
+  
+  **Why Separate?**
+  • Prevents document bloat (embedded would make events huge)
+  • Enables efficient queries on purchases
+  • Supports scalability (unlimited capacity for online events)
+  • Industry standard pattern (matches Eventbrite, Ticketmaster)
+  '''
+}
+
+Table venues {
+  _id ObjectId [pk, note: 'Primary Key']
+  
+  // Core Fields
+  name string [not null]
+  description string [not null]
+  venueType string [not null, note: 'POLYMORPHIC DISCRIMINATOR: conferenceCenter, park, restaurant, virtualSpace, stadium, theater']
+  schemaVersion string [not null, default: '1.0']
+  
+  // Geospatial
+  location json [not null, note: 'GeoJSON Point for 2dsphere index']
+  
+  // Embedded Subdocuments
+  address json [not null, note: 'EMBEDDED - Always needed with venue (street, city, state, zipCode, country)']
+  contact json [not null, note: 'EMBEDDED - Contact info (email, phone, website)']
+  pricing json [not null, note: 'EMBEDDED - Pricing info (hourlyRate, dailyRate, currency)']
+  availability json [not null, note: 'EMBEDDED - Weekly schedule (monday-sunday with open/close times)']
+  computedStats json [not null, note: 'EMBEDDED - COMPUTED PATTERN - Pre-calculated analytics (totalEventsHosted, averageAttendance, revenueGenerated, lastEventDate)']
+  
+  // Polymorphic Fields (Type-Specific)
+  conferenceCenterDetails json [note: 'OPTIONAL - Conference center only: breakoutRooms, avEquipment[], cateringAvailable']
+  parkDetails json [note: 'OPTIONAL - Park only: outdoorSpace, parkingSpaces, restroomFacilities']
+  virtualSpaceDetails json [note: 'OPTIONAL - Virtual space only: platform, maxConcurrentUsers, recordingCapability']
+  
+  // Metadata
+  capacity int [not null]
+  rating double
+  reviewCount int
+  amenities array
+  createdAt datetime [not null]
+  updatedAt datetime [not null]
+  
+  Note: '''
+  **PATTERN 1: POLYMORPHIC DESIGN**
+  • venueType discriminator field (conferenceCenter, park, restaurant, virtualSpace, stadium, theater)
+  • Type-specific details in separate optional fields
+  • Enables type-specific queries and filtering
+  
+  **PATTERN 3: COMPUTED PATTERN**
+  • computedStats: Pre-calculated venue analytics
+  • Updated when events are created/updated
+  • Benefits: Fast venue performance queries without aggregations
+  
+  **EMBEDDING DECISIONS:**
+  • address, contact, pricing, availability: Always needed with venue, small size
+  • Embedded for performance (no joins needed)
+  '''
+}
+
+Table users {
+  _id ObjectId [pk, note: 'Primary Key']
+  
+  // Core Fields
+  email string [unique, not null]
+  
+  // Embedded Subdocuments
+  profile json [not null, note: 'EMBEDDED - User profile (firstName, lastName, preferences)']
+  
+  // Preferences (within profile)
+  preferences json [note: 'EMBEDDED - User preferences (categories[], location GeoJSON Point, radiusKm)']
+  
+  // Metadata
+  schemaVersion string [not null, default: '1.0']
+  lastLogin datetime
+  createdAt datetime [not null]
+  updatedAt datetime [not null]
+  
+  Note: '''
+  **EMBEDDED PROFILE:**
+  • User profile embedded for performance
+  • Location data (GeoJSON Point) for geospatial queries
+  • Category preferences for personalized recommendations
+  • Search radius configuration
+  '''
+}
+
+Table reviews {
+  _id ObjectId [pk, note: 'Primary Key']
+  
+  // Relationships (Either eventId OR venueId, not both)
+  eventId ObjectId [note: 'REFERENCE - Optional - Either eventId OR venueId required']
+  venueId ObjectId [note: 'REFERENCE - Optional - Either eventId OR venueId required']
+  userId ObjectId [not null, note: 'REFERENCE - User who wrote review']
+  
+  // Review Data
+  rating int [not null, note: '1-5 star rating']
+  comment string [not null]
+  
+  // Metadata
+  schemaVersion string [not null, default: '1.0']
+  createdAt datetime [not null]
+  updatedAt datetime
+  
+  Note: '''
+  **REFERENCE DESIGN:**
+  • Either eventId OR venueId (not both) - supports reviews for events or venues
+  • Referenced for shared data across many events/venues
+  • Enables aggregation queries for average ratings
+  '''
+}
+
+
+Table checkins {
+  _id ObjectId [pk, note: 'Primary Key']
+  
+  // Relationships
+  eventId ObjectId [not null, note: 'REFERENCE - Event being checked into']
+  userId ObjectId [not null, note: 'REFERENCE - User checking in']
+  venueId ObjectId [not null, note: 'REFERENCE - Denormalized for analytics performance (avoids joins)']
+  ticketId ObjectId [note: 'REFERENCE - Optional - Links to purchased ticket (70% have tickets, 30% free/walk-ins)']
+  
+  // Check-in Data
+  checkInTime datetime [not null]
+  checkInMethod string [not null, note: 'mobile, kiosk, staff, qr']
+  qrCode string [not null, note: 'Unique QR code for check-in']
+  ticketTier string [note: 'Denormalized from ticket for quick display (performance optimization)']
+  
+  // Location & Metadata
+  location json [not null, note: 'GeoJSON Point - Check-in location for verification']
+  metadata json [not null, note: 'deviceInfo, ipAddress, staffVerified']
+  
+  // Metadata
+  schemaVersion string [not null, default: '1.0']
+  createdAt datetime [not null]
+  updatedAt datetime [not null]
+  
+  Note: '''
+  **PATTERN 6: BRIDGE COLLECTION**
+  • Many-to-many relationship between users and events
+  • Enables analytics: "Which events did user X attend?", "How many users attended event Y?"
+  • Unique constraint on (eventId, userId) prevents duplicate check-ins
+  
+  **PATTERN 7: CHECKIN-TICKET RELATIONSHIP**
+  • Optional ticketId links to Tickets collection
+  • 70% of checkins have tickets (paid events)
+  • 30% have null ticketId (free events, walk-ins, staff, volunteers)
+  • ticketTier denormalized for performance (quick display without lookup)
+  
+  **DENORMALIZATION:**
+  • venueId: Denormalized from event for analytics performance (avoids joins)
+  • ticketTier: Denormalized from ticket for quick display
+  
+  **Benefits:**
+  • Analytics flexibility for attendance patterns
+  • Scalability without document bloat
+  • Supports both paid and free events
+  • Enables ticket status updates ("active" → "used")
+  '''
+}
+
+
+// ============================================
+// RELATIONSHIPS
+// ============================================
+
+// Events → Venues (Many-to-One)
+Ref: events.venueId > venues._id
+
+// Tickets → Events & Users (Many-to-One)
+Ref: tickets.eventId > events._id
+Ref: tickets.userId > users._id
+
+// Reviews → Events/Venues & Users (Many-to-One)
+Ref: reviews.eventId > events._id
+Ref: reviews.venueId > venues._id
+Ref: reviews.userId > users._id
+
+// Checkins → Events, Users, Venues, Tickets (Many-to-One)
+Ref: checkins.eventId > events._id
+Ref: checkins.userId > users._id
+Ref: checkins.venueId > venues._id
+Ref: checkins.ticketId > tickets._id
