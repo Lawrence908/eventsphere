@@ -1,8 +1,14 @@
-// Create collections with JSON Schema validators for EventSphere
+// EventSphere
+// Collections Creation
 // Student ID: 664 870 797 - Chris Lawrence
 // CSCI 485 - Fall 2025
 
-// Events Collection - Core catalog with polymorphic design
+// ===== SUMMARY =====
+// 6 collections: events, venues, users, reviews, checkins, tickets
+
+// ===== EVENTS COLLECTION SCHEMA =====
+
+// Polymorphic design for eventType with geospatial data
 db.createCollection("events", {
     validator: {
         $jsonSchema: {
@@ -133,7 +139,9 @@ db.createCollection("events", {
     }
 });
 
-// Venues Collection - Polymorphic venue types with geospatial data
+// ===== VENUES COLLECTION SCHEMA =====
+
+// Polymorphic venue types with geospatial data
 db.createCollection("venues", {
     validator: {
         $jsonSchema: {
@@ -232,7 +240,9 @@ db.createCollection("venues", {
     }
 });
 
-// Users Collection - User profiles with preferences
+// ===== USERS COLLECTION SCHEMA =====
+
+// User profiles with preferences(future profile pages) and geospatial data(future location-based recommendations)
 db.createCollection("users", {
     validator: {
         $jsonSchema: {
@@ -271,7 +281,9 @@ db.createCollection("users", {
     }
 });
 
-// Reviews Collection - Event and venue reviews
+// ===== REVIEWS COLLECTION SCHEMA =====
+
+// Event and venue reviews
 db.createCollection("reviews", {
     validator: {
         $jsonSchema: {
@@ -291,7 +303,9 @@ db.createCollection("reviews", {
     }
 });
 
-// Check-ins Collection - Bridge table for user-event attendance
+// ===== CHECKINS COLLECTION SCHEMA =====
+
+// Bridge table for user-event attendance
 db.createCollection("checkins", {
     validator: {
         $jsonSchema: {
@@ -303,7 +317,7 @@ db.createCollection("checkins", {
                 venueId: { bsonType: "objectId" },
                 ticketId: { bsonType: ["objectId", "null"] },
                 checkInTime: { bsonType: "date" },
-                qrCode: { bsonType: "string", minLength: 3 },
+                qrCode: { bsonType: ["string", "null"] },
                 schemaVersion: { bsonType: "string", enum: ["1.0"] },
                 ticketTier: { bsonType: ["string", "null"] },
                 checkInMethod: { bsonType: ["string", "null"], enum: ["qrCode", "manual", "mobileApp", null] },
@@ -329,8 +343,9 @@ db.createCollection("checkins", {
     }
 });
 
-// Tickets Collection - Individual user ticket purchases (separate from embedded EventTickets)
-// Note: Embedded EventTickets (ticket types/tiers) are in events collection
+// ===== TICKETS COLLECTION SCHEMA =====
+
+// Individual user ticket purchases (separate from embedded EventTickets showing available ticketTier)
 // This collection stores actual user purchases for scalability
 db.createCollection("tickets", {
     validator: {
@@ -353,6 +368,4 @@ db.createCollection("tickets", {
 
 print("All collections created successfully with schema validation!");
 print("Collections created: events, venues, users, reviews, checkins, tickets");
-print("Note: Embedded EventTickets (ticket types) are in events collection");
-print("      Separate tickets collection stores individual user purchases");
 print("Next step: Run create_indexes.js to create performance indexes");
