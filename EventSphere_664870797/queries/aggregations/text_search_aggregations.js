@@ -1,17 +1,9 @@
-// Text Search Aggregation Pipelines for EventSphere
+// EventSphere
+// Text Search Aggregation Pipelines
 // Student ID: 664 870 797 - Chris Lawrence
 // CSCI 485 - Fall 2025
 
-print("=".repeat(60));
-print("TEXT SEARCH AGGREGATION PIPELINES");
-print("=".repeat(60));
-
 // ===== 1. BASIC TEXT SEARCH WITH RELEVANCE =====
-print("\n1. BASIC TEXT SEARCH WITH RELEVANCE");
-print("-".repeat(40));
-
-// Search for technology-related events with relevance scoring
-print("Searching for 'technology conference' events:");
 db.events.aggregate([
     {
         $match: {

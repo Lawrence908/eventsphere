@@ -1,17 +1,9 @@
+// EventSphere
 // Basic CRUD Operations for Events Collection
 // Student ID: 664 870 797 - Chris Lawrence
 // CSCI 485 - Fall 2025
 
-print("=".repeat(60));
-print("EVENTS COLLECTION - CRUD OPERATIONS");
-print("=".repeat(60));
-
 // ===== CREATE OPERATIONS =====
-print("\n1. CREATE OPERATIONS");
-print("-".repeat(30));
-
-// Create a new in-person event
-print("Creating a new in-person event...");
 db.events.insertOne({
     title: "Vancouver Food Festival 2025",
     description: "Celebrate the diverse culinary landscape of Vancouver with local chefs and restaurants.",

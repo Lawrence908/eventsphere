@@ -1,17 +1,9 @@
-// Geospatial Aggregation Pipelines for EventSphere
+// EventSphere
+// Geospatial Aggregation Pipelines
 // Student ID: 664 870 797 - Chris Lawrence
 // CSCI 485 - Fall 2025
 
-print("=".repeat(60));
-print("GEOSPATIAL AGGREGATION PIPELINES");
-print("=".repeat(60));
-
 // ===== 1. NEARBY EVENTS DISCOVERY =====
-print("\n1. NEARBY EVENTS DISCOVERY");
-print("-".repeat(40));
-
-// Find events within 50km of Vancouver downtown
-print("Finding events within 50km of Vancouver downtown:");
 db.events.aggregate([
     {
         $geoNear: {

@@ -7,7 +7,7 @@
 
 ## Project Overview
 
-EventSphere is a comprehensive MongoDB-based event management system that demonstrates advanced NoSQL database concepts through real-world application design. The system enables users to discover, review, and attend in-person, virtual, and hybrid events with sophisticated geospatial discovery, full-text search, and real-time analytics capabilities.
+EventSphere is a MongoDB-based event management system that demonstrates advanced NoSQL database concepts through real-world application design. The system enables users to discover, review, and attend in-person, virtual, and hybrid events with sophisticated geospatial discovery, full-text search, and advanced analytics capabilities.
 
 ## Key Features Demonstrated
 
@@ -79,7 +79,7 @@ EventSphere_664870797/
 
 ### Frontend
 - **HTML5/CSS3** - Modern responsive web interface
-- **JavaScript (ES6+)** - Interactive features and real-time updates
+- **JavaScript (ES6+)** - Interactive features with dynamic UI behaviors
 - **Socket.IO** - Real-time WebSocket communication
 - **Leaflet.js** - Interactive maps for geospatial features
 

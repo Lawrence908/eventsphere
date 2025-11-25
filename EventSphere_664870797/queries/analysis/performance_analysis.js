@@ -1,20 +1,9 @@
-// Performance Analysis Queries for EventSphere
+// EventSphere
+// Performance Analysis Queries
 // Student ID: 664 870 797 - Chris Lawrence
 // CSCI 485 - Fall 2025
 
-print("=".repeat(60));
-print("PERFORMANCE ANALYSIS QUERIES");
-print("=".repeat(60));
-
 // ===== 1. INDEX USAGE ANALYSIS =====
-print("\n1. INDEX USAGE ANALYSIS");
-print("-".repeat(40));
-
-// Analyze index usage and performance
-print("Analyzing index usage patterns:");
-
-// Test geospatial query performance
-print("\nTesting geospatial query performance:");
 const geoStartTime = new Date();
 const geoResults = db.events.find({
     location: {

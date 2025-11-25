@@ -1,18 +1,9 @@
-// Business Intelligence Analysis Queries for EventSphere
+// EventSphere
+// Business Intelligence Analysis Queries
 // Student ID: 664 870 797 - Chris Lawrence
 // CSCI 485 - Fall 2025
 
-print("=".repeat(60));
-print("BUSINESS INTELLIGENCE ANALYSIS");
-print("=".repeat(60));
-
 // ===== 1. REVENUE ANALYSIS =====
-print("\n1. REVENUE ANALYSIS");
-print("-".repeat(40));
-
-// Comprehensive revenue analysis across multiple dimensions
-print("Analyzing revenue patterns and trends:");
-
 db.events.aggregate([
     {
         $match: {

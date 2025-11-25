@@ -1,17 +1,9 @@
+// EventSphere
 // Basic CRUD Operations for Users, Reviews, and Checkins Collections
 // Student ID: 664 870 797 - Chris Lawrence
 // CSCI 485 - Fall 2025
 
-print("=".repeat(60));
-print("USERS, REVIEWS & CHECKINS - CRUD OPERATIONS");
-print("=".repeat(60));
-
 // ===== USERS COLLECTION CRUD =====
-print("\n1. USERS COLLECTION - CRUD OPERATIONS");
-print("-".repeat(40));
-
-// CREATE - Add new users
-print("Creating new users...");
 db.users.insertMany([
     {
         email: "alex.thompson@gmail.com",

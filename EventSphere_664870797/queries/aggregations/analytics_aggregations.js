@@ -1,17 +1,9 @@
-// Analytics Aggregation Pipelines for EventSphere
+// EventSphere
+// Analytics Aggregation Pipelines
 // Student ID: 664 870 797 - Chris Lawrence
 // CSCI 485 - Fall 2025
-
-print("=".repeat(60));
-print("ANALYTICS AGGREGATION PIPELINES");
-print("=".repeat(60));
-
 // ===== 1. EVENT PERFORMANCE ANALYTICS =====
-print("\n1. EVENT PERFORMANCE ANALYTICS");
-print("-".repeat(40));
-
 // Comprehensive event performance metrics
-print("Analyzing event performance metrics:");
 db.events.aggregate([
     {
         $match: {

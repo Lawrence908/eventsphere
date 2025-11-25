@@ -1,17 +1,9 @@
+// EventSphere
 // Basic CRUD Operations for Venues Collection
 // Student ID: 664 870 797 - Chris Lawrence
 // CSCI 485 - Fall 2025
 
-print("=".repeat(60));
-print("VENUES COLLECTION - CRUD OPERATIONS");
-print("=".repeat(60));
-
 // ===== CREATE OPERATIONS =====
-print("\n1. CREATE OPERATIONS");
-print("-".repeat(30));
-
-// Create a new conference center venue
-print("Creating a new conference center venue...");
 db.venues.insertOne({
     name: "Pacific Conference Centre - Richmond",
     venueType: "conferenceCenter",
