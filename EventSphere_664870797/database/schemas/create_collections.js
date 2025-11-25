@@ -36,7 +36,11 @@ db.createCollection("events", {
                         type: { enum: ["Point"] },
                         coordinates: {
                             bsonType: "array",
-                            items: { bsonType: "double" },
+                            items: [
+                                { bsonType: ["double", "int"], minimum: -180, maximum: 180 }, // longitude
+                                { bsonType: ["double", "int"], minimum: -90,  maximum: 90  }   // latitude
+                            ],
+                            additionalItems: false,
                             minItems: 2,
                             maxItems: 2
                         }
@@ -171,7 +175,11 @@ db.createCollection("venues", {
                         type: { enum: ["Point"] },
                         coordinates: {
                             bsonType: "array",
-                            items: { bsonType: "double" },
+                            items: [
+                                { bsonType: ["double", "int"], minimum: -180, maximum: 180 }, // longitude
+                                { bsonType: ["double", "int"], minimum: -90,  maximum: 90  }   // latitude
+                            ],
+                            additionalItems: false,
                             minItems: 2,
                             maxItems: 2
                         }

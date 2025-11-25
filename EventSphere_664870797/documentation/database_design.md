@@ -5,11 +5,11 @@
 **Course:** CSCI 485 - Topics in Computer Science (MongoDB/NoSQL)  
 **Semester:** Fall 2025  
 
-## Executive Summary
+## Summary
 
-EventSphere is a comprehensive MongoDB-based event management system that demonstrates advanced NoSQL database concepts through real-world application design. The system enables users to discover, review, and attend in-person, virtual, and hybrid events with sophisticated geospatial discovery, full-text search, and real-time analytics capabilities.
+EventSphere is a MongoDB-based event management system that demonstrates advanced NoSQL database concepts through real-world application design. The system enables users to discover, review, and attend in-person, virtual, and hybrid events with geospatial discovery, full-text search, and index-optimized analytics capabilities.
 
-This document outlines the complete database design, including collection schemas, advanced design patterns, indexing strategies, and performance optimizations that showcase MongoDB's capabilities for modern event management applications.
+This document outlines the complete database design, including collection schemas, advanced design patterns, indexing strategies, and performance optimizations that showcase MongoDB's capabilities for event management applications.
 
 ## Database Architecture Overview
 
@@ -483,111 +483,34 @@ All collections enforce comprehensive validation:
 - **Range Validation**: Ratings (1-5), prices (≥0), capacities (≥0)
 - **Enum Validation**: Event types, venue types, status values
 
-### Data Quality Measures
-
-- **Referential Integrity**: Application-level foreign key validation
 - **Duplicate Prevention**: Unique indexes on critical fields
-- **Input Sanitization**: XSS and injection prevention
-- **Coordinate Validation**: Geographic bounds checking
-
-## Scalability & Performance
-
-### Horizontal Scaling Strategy
-
-**Sharding Recommendations**:
-- **Shard Key**: `location` (geospatial distribution) or `startDate` (temporal distribution)
-- **Chunk Size**: 64MB for optimal distribution
-- **Balancer**: Enabled for automatic chunk migration
-
-### Caching Strategy
-
-- **Application Cache**: Redis for popular events and search results
-- **Database Cache**: MongoDB WiredTiger cache for hot data
-- **CDN**: Static assets and event images
-
-### Performance Monitoring
-
-- **Query Performance**: Slow query logging and analysis
-- **Index Usage**: Regular index usage monitoring
-- **Resource Utilization**: CPU, memory, and disk monitoring
-
-## Security Considerations
-
-### Data Protection
-
-- **Encryption**: TLS for data in transit, encryption at rest
-- **Authentication**: Strong password policies and MFA
-- **Authorization**: Role-based access control (RBAC)
-- **Audit Logging**: Comprehensive audit trail
-
-### Privacy Compliance
-
-- **Data Minimization**: Only collect necessary user data
-- **Retention Policies**: Automatic cleanup of old data
-- **User Rights**: Data export and deletion capabilities
-- **Anonymization**: PII anonymization for analytics
-
-## Production Readiness
-
-### Deployment Architecture
-
-```
-Load Balancer → API Gateway → Application Servers → MongoDB Replica Set
-                    ↓
-            Redis Cache → Elasticsearch (Search)
-```
-
-### Monitoring & Alerting
-
-- **Application Metrics**: Response times, error rates, throughput
-- **Database Metrics**: Query performance, index usage, replication lag
-- **Infrastructure Metrics**: CPU, memory, disk, network
-- **Business Metrics**: Event creation rates, user engagement, revenue
-
-### Backup & Recovery
-
-- **Automated Backups**: Daily full backups with point-in-time recovery
-- **Replica Sets**: 3-node replica set for high availability
-- **Disaster Recovery**: Cross-region backup replication
-- **Testing**: Regular backup restoration testing
 
 ## Future Enhancements
 
 ### Phase 1: Advanced Features
 - Machine learning recommendation engine
-- Real-time collaborative filtering
 - Advanced analytics dashboard
-- Mobile app with offline support
+- Regular index usage monitoring
 
 ### Phase 2: Enterprise Features
 - Multi-tenant architecture
-- Advanced reporting and BI
+- Advanced reporting and BI! (maybe using Power BI)
 - API rate limiting and monitoring
 - Automated scaling and load balancing
 
 ### Phase 3: AI Integration
 - Natural language event search
-- Automated event categorization
-- Predictive analytics for attendance
+- Automated event categorization (maybe using NLP)
 - Chatbot for event discovery
 
 ## Conclusion
 
-The EventSphere database design demonstrates comprehensive MongoDB expertise through:
+The EventSphere database design demonstrates MongoDB expertise through:
 
 - **Advanced Design Patterns**: Polymorphic design, extended references, computed patterns
-- **Performance Optimization**: Strategic indexing for sub-100ms queries
+- **Performance Optimization**: Strategic indexing for fast query responses and scalability
 - **Real-world Applicability**: Production-ready patterns used by industry leaders
 - **Scalability**: Horizontal scaling readiness with proper sharding strategies
-- **Modern Features**: Geospatial queries, text search, real-time updates
+- **Features**: Geospatial queries, text search
 
-This design showcases deep understanding of NoSQL principles, MongoDB capabilities, and production-ready database architecture suitable for modern event management applications at scale.
-
----
-
-**Document Version**: 1.0  
-**Last Updated**: October 2025  
-**Total Collections**: 5  
-**Total Indexes**: 20 (4 per collection)  
-**Storage Optimization**: 35% reduction from comprehensive strategy  
-**Expected Performance**: <50ms for critical operations
+This design showcases understanding of NoSQL principles, MongoDB capabilities, and production-ready database architecture suitable for modern event management applications at scale.
