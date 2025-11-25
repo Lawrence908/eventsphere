@@ -49,14 +49,14 @@ EventSphere represents a comprehensive exploration of MongoDB's capabilities thr
 - **Learning**: Pre-calculated statistics for dashboard performance
 - **Challenge**: Balancing data freshness with query performance
 - **Solution**: Implemented computed statistics with update triggers
-- **Impact**: Achieved sub-100ms dashboard queries with real-time data
+- **Impact**: Achieved sub-100ms dashboard queries with up-to-date data
 
 ### 3. Performance Optimization
 
 #### Index Strategy Evolution
 - **Initial Approach**: Comprehensive indexing with 47+ indexes
 - **Learning**: Understanding the balance between query performance and write performance
-- **Optimization**: Reduced to 20 strategic indexes (4 per collection)
+- **Optimization**: Reduced to 24 strategic indexes (4 per collection)
 - **Result**: 35% storage reduction while maintaining performance targets
 
 #### Query Performance Analysis
@@ -185,7 +185,7 @@ The EventSphere project represents a comprehensive exploration of MongoDB's capa
 - **Performance Optimization**: Strategic indexing and query optimization
 - **Real-World Application**: Production-ready architecture and scalability patterns
 
-This project demonstrates not only technical proficiency but also the ability to apply NoSQL principles to solve real-world problems. The optimized index strategy (20 indexes, 4 per collection) showcases understanding of the balance between performance and resource utilization, while the comprehensive documentation reflects professional software development practices.
+This project demonstrates not only technical proficiency but also the ability to apply NoSQL principles to solve real-world problems. The optimized index strategy (24 indexes, 4 per collection) showcases understanding of the balance between performance and resource utilization, while the comprehensive documentation reflects professional software development practices.
 
 The learning journey from initial concept to production-ready system has provided invaluable experience in MongoDB development, database design, and full-stack application development. This project serves as a foundation for future work in NoSQL databases and modern web application development.
 
@@ -195,4 +195,4 @@ The learning journey from initial concept to production-ready system has provide
 **Project Duration**: 8 weeks  
 **Total Learning Hours**: 120+ hours  
 **Key Technologies**: MongoDB, Python, Flask, JavaScript, HTML/CSS  
-**Advanced Features**: Geospatial queries, text search, real-time updates, analytics
+**Advanced Features**: Geospatial queries, text search, analytics

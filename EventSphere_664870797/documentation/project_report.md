@@ -5,14 +5,14 @@
 **Student Name:** Chris Lawrence  
 **Course:** CSCI 485 - Topics in Computer Science (MongoDB/NoSQL)  
 **Semester:** Fall 2025  
-**Instructor:** [Instructor Name]  
-**Submission Date:** [Date]  
+**Instructor:** Dr. Mehdi Khani  
+**Submission Date:** November 30, 2025  
 
 ---
 
 ## Table of Contents
 
-1. [Executive Summary](#executive-summary)
+1. [Summary](#summary)
 2. [Project Overview](#project-overview)
 3. [Technical Implementation](#technical-implementation)
 4. [Database Design & Architecture](#database-design--architecture)
@@ -30,17 +30,16 @@
 
 ---
 
-## Executive Summary
+## Summary
 
-EventSphere is a comprehensive MongoDB-based event management system that demonstrates advanced NoSQL database concepts through real-world application design. The project showcases sophisticated geospatial discovery, full-text search capabilities, real-time analytics, and modern web application architecture.
+EventSphere is a MongoDB-based event management system that demonstrates advanced NoSQL database concepts through real-world application design. The project showcases sophisticated geospatial discovery, full-text search capabilities, and modern web application architecture.
 
 ### Key Achievements
 
 - **Database Design**: 6 collections with 24 strategic indexes optimized for sub-100ms query performance
 - **Advanced Patterns**: Polymorphic design, extended references, computed statistics, and schema versioning
-- **Data Volume**: 1000+ realistic sample records demonstrating production-scale data handling
+- **Data Volume**: 60000+ realistic documents demonstrating querying and aggregation capabilities
 - **Query Complexity**: 25+ documented queries including complex aggregation pipelines
-- **Real-time Features**: WebSocket integration with MongoDB Change Streams
 - **Performance**: Comprehensive benchmarking with optimization recommendations
 - **Dual Ticket Architecture**: Embedded EventTickets (types) and separate Tickets collection (purchases)
 
@@ -63,7 +62,6 @@ EventSphere addresses the complex requirements of modern event management, chose
 1. **Schema Flexibility**: Events have diverse attributes (virtual meetings, recurring schedules, hybrid formats)
 2. **Geospatial Requirements**: Location-based discovery and venue management
 3. **Complex Relationships**: Many-to-many relationships between users, events, and venues
-4. **Real-time Needs**: Live updates for attendance, reviews, and availability
 5. **Analytics Requirements**: Revenue tracking, attendance patterns, and performance metrics
 
 ### Business Requirements
@@ -82,7 +80,6 @@ The system supports the following core business processes:
 - Sub-100ms query performance for common operations
 - Support for 1000+ concurrent users (simulated)
 - Comprehensive data validation and integrity
-- Real-time updates via WebSocket integration
 - Production-ready architecture and security
 
 ---
@@ -96,11 +93,10 @@ The system supports the following core business processes:
 - **Flask 2.3+**: Web framework for API and web interface
 - **PyMongo 4.5+**: MongoDB driver with connection pooling
 - **MongoDB 7.0+**: Primary database with replica set configuration
-- **Socket.IO**: Real-time WebSocket communication
 
 #### Frontend Technologies
 - **HTML5/CSS3**: Modern responsive web interface
-- **JavaScript (ES6+)**: Interactive features and real-time updates
+- **JavaScript (ES6+)**: Interactive features with dynamic UI behaviors
 - **Leaflet.js**: Interactive maps for geospatial features
 - **Chart.js**: Data visualization for analytics dashboard
 
@@ -155,7 +151,6 @@ EventSphere/
 │   ├── services.py          # Business logic layer
 │   ├── schema_validation.py # JSON Schema validation
 │   ├── geocoding.py         # Geospatial utilities
-│   ├── realtime.py          # WebSocket event handlers
 │   ├── utils.py             # Helper functions
 │   ├── static/              # CSS, JavaScript, images
 │   └── templates/           # HTML templates
@@ -436,26 +431,6 @@ try {
 }
 ```
 
-### 5. Change Streams
-
-#### Real-time Updates
-```javascript
-// Watch for event changes
-const changeStream = db.events.watch([
-  { $match: { "operationType": { $in: ["insert", "update", "delete"] } } }
-]);
-
-changeStream.on('change', (change) => {
-  // Emit WebSocket updates to connected clients
-  io.emit('eventUpdate', {
-    operationType: change.operationType,
-    documentKey: change.documentKey,
-    fullDocument: change.fullDocument
-  });
-});
-```
-
----
 
 ## Query Implementation & Performance
 
@@ -610,47 +585,6 @@ POST   /api/events/{id}/reviews # Add event review
 }
 ```
 
-### Real-time Features
-
-#### WebSocket Integration
-```python
-@socketio.on('join_location')
-def handle_join_location(data):
-    coordinates = data['coordinates']
-    radius = data.get('radius', 50)
-    
-    # Join room for location-based updates
-    room = f"location_{coordinates[0]}_{coordinates[1]}_{radius}"
-    join_room(room)
-    
-    # Send initial nearby events
-    events = event_service.find_nearby_events(coordinates, radius)
-    emit('nearby_events', events)
-
-@socketio.on('event_updated')
-def handle_event_update(event_data):
-    # Broadcast to relevant location rooms
-    broadcast_to_location_rooms(event_data)
-```
-
-#### Change Stream Integration
-```python
-def watch_events():
-    change_stream = db.events.watch([
-        {"$match": {"operationType": {"$in": ["insert", "update"]}}}
-    ])
-    
-    for change in change_stream:
-        event_data = change['fullDocument']
-        
-        # Emit to WebSocket clients
-        socketio.emit('event_update', {
-            'type': change['operationType'],
-            'event': event_data
-        })
-```
-
----
 
 ## Testing & Validation
 
@@ -666,7 +600,6 @@ def watch_events():
 - **API Endpoints**: Complete request/response cycles
 - **Database Operations**: CRUD operations with real data
 - **Authentication**: User authentication and authorization
-- **Real-time Features**: WebSocket communication
 
 #### Performance Tests (15 tests)
 - **Query Performance**: Response time benchmarks
@@ -890,17 +823,6 @@ Data Cache Hit Ratio: 94.3%
 
 **Result**: Flexible schema supporting 4 event types with minimal query overhead.
 
-#### 3. Real-time Updates at Scale
-
-**Challenge**: Providing real-time updates to thousands of concurrent users without overwhelming the database.
-
-**Solution**:
-- Implemented MongoDB Change Streams for efficient change detection
-- Used WebSocket rooms for targeted updates based on user location/interests
-- Implemented client-side caching to reduce server load
-
-**Result**: Successfully handled 1000+ concurrent WebSocket connections.
-
 #### 4. Complex Aggregation Performance
 
 **Challenge**: Business intelligence queries requiring multiple collection joins and complex calculations.
@@ -1010,7 +932,6 @@ Data Cache Hit Ratio: 94.3%
 **Full-Stack Development**:
 - Developed complete web application with Flask
 - Implemented RESTful API design principles
-- Mastered real-time features with WebSocket integration
 
 **Testing and Quality Assurance**:
 - Implemented comprehensive test suites
@@ -1100,7 +1021,6 @@ Data Cache Hit Ratio: 94.3%
 - **Advanced Filtering**: Faceted search with dynamic filters
 
 #### Analytics Dashboard
-- **Real-time Metrics**: Live dashboard with key performance indicators
 - **Business Intelligence**: Advanced reporting and data visualization
 - **Predictive Insights**: Trend analysis and forecasting
 
@@ -1132,7 +1052,6 @@ Data Cache Hit Ratio: 94.3%
 - **Dynamic Pricing**: AI-driven ticket pricing optimization
 
 #### Advanced Analytics
-- **Real-time Stream Processing**: Apache Kafka for event streaming
 - **Data Lake Integration**: Historical data analysis with Hadoop/Spark
 - **Machine Learning Pipeline**: Automated model training and deployment
 - **A/B Testing Framework**: Systematic feature testing and optimization
@@ -1171,9 +1090,9 @@ Phase 3: Event-Driven Architecture with Message Queues
 ```
 Current: Batch Processing for Analytics
     ↓
-Phase 1: Real-time Analytics with Change Streams
+Phase 1: Incremental Analytics with Scheduled ETL Jobs
     ↓
-Phase 2: Stream Processing with Apache Kafka
+Phase 2: Warehouse-Oriented Analytics Platform
     ↓
 Phase 3: ML Pipeline with Feature Store
 ```
@@ -1194,7 +1113,6 @@ EventSphere successfully demonstrates comprehensive MongoDB expertise through a 
 - 1000+ realistic sample records with proper relationships
 - 25+ documented queries including complex aggregations
 - Advanced design patterns (polymorphic, extended reference, computed)
-- Real-time features with WebSocket integration
 
 **Academic Objectives**:
 - Comprehensive demonstration of MongoDB features
@@ -1228,7 +1146,6 @@ The EventSphere system demonstrates patterns and technologies used by industry l
 - **Airbnb**: Geospatial queries for location-based discovery
 - **Eventbrite**: Event management with flexible schema design
 - **MongoDB Atlas**: Advanced aggregation pipelines for analytics
-- **Uber**: Real-time updates with change streams
 - **Netflix**: Recommendation systems with machine learning integration
 
 ### Future Applications
@@ -1237,7 +1154,7 @@ The skills and knowledge gained from this project are directly applicable to:
 
 - **E-commerce Platforms**: Product catalogs with flexible attributes
 - **Social Media Applications**: User-generated content with geospatial features
-- **IoT Data Management**: Time-series data with real-time analytics
+- **IoT Data Management**: Time-series data with advanced analytics
 - **Content Management Systems**: Flexible document structures with search
 - **Financial Applications**: Transaction processing with analytics
 

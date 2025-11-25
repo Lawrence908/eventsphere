@@ -307,169 +307,61 @@ Checkins can optionally reference tickets via `ticketId` field:
 ```
 
 **Use Cases**:
-- **With Ticket**: Paid event check-ins link to ticket purchase (70% of checkins)
-- **Without Ticket**: Free events, walk-ins, staff, volunteers (30% of checkins)
+- **With Ticket**: Paid event check-ins link to ticket purchase (70% of checkins created in DB)
+- **Without Ticket**: Free events, walk-ins, staff, volunteers (30% of checkins created in DB)
 
 **Benefits**:
-- ✅ Avoids data duplication (ticketTier, pricePaid from ticket)
-- ✅ Maintains referential integrity
-- ✅ Enables queries: "Which ticket was used for this checkin?"
-- ✅ Supports ticket status updates: Mark ticket as "used" when checked in
-- ✅ `ticketTier` kept as denormalized field for performance (quick display)
+- Avoids data duplication (ticketTier, pricePaid from ticket)
+- Maintains referential integrity
+- Enables queries: "Which ticket was used for this checkin?"
+- Supports ticket status updates: Mark ticket as "used" when checked in for analytics and possible future fraud prevention or refunds
+- `ticketTier` kept as denormalized field for performance (quick display) for performance optimization
 
 ## Indexing Strategy
 
-### Strategic Index Design
+The full command for creating every index lives in `database/indexes/create_indexes.js`. This section captures the reasoning behind each group of indexes.
 
-The database implements 24 strategic indexes (4 per collection, 6 collections) optimized for real-world query patterns with a focus on high-frequency operations:
+### Events Collection
+- **Geospatial (`location: "2dsphere"`):** guarantees $geoNear and proximity searches stay within 2dsphere requirements, which is fundamental for querying events around Nanaimo or any other location.
+- **Text compound index:** merges title, description, category, and tags so keyword searches sort by relevance without requiring application logic.
+- **Category + startDate:** mirrors the most likely common filter combo (“what’s happening in category X this weekend”), enabling efficient querying and pagination.
+- **eventType + startDate:** keeps polymorphic views fast (virtual vs. in-person vs. hybrid) since all templates filter by type plus an upcoming date window.
 
-#### Events Collection (4 indexes)
-```javascript
-// 1. Geospatial discovery (HIGHEST PRIORITY)
-db.events.createIndex({ location: "2dsphere" });
+### Venues Collection
+- **Geospatial:** supports “find venues near this coordinates” workflows used during event creation.
+- **venueType + capacity:** quickly returns suitable spaces when organizers filter by format (“conference center, ≥500 seats”).
+- **venueType + rating:** powers specific lists like “highest-rated parks” by combining quality and type without extra sorting.
+- **Single-field venueType:** serves as a fallback when only the type filter is set, ensuring predictable performance when capacity/rating filters are absent.
 
-// 2. Text search with relevance scoring (HIGHEST PRIORITY)
-db.events.createIndex({ 
-  title: "text", 
-  description: "text", 
-  category: "text", 
-  tags: "text" 
-});
+### Reviews Collection
+- **eventId:** main access path for displaying reviews inside event detail pages.
+- **venueId:** ensures venue display shows aggregated feedback without querying unrelated reviews.
+- **eventId + rating:** feeds rating statistics while maintaining the eventId path for quick access.
+- **userId:** supports user profile history (“what has this attendee reviewed?”).
 
-// 3. Category + date filtering (HIGH PRIORITY)
-db.events.createIndex({ category: 1, startDate: 1 });
+### Checkins Collection
+- **eventId + userId (unique):** enforces one check-in per attendee per event.
+- **eventId:** backs computed pattern attendance counters and.
+- **userId:** allows user-level attendance history.
+- **ticketId:** links a check-in back to the exact ticket purchase.
 
-// 4. Event type + date filtering (HIGH PRIORITY)
-db.events.createIndex({ eventType: 1, startDate: 1 });
-```
+### Users Collection
+- **email (unique):** primary authentication key.
+- **createdAt:** enables inexpensive querying of app users over time.
+- **lastLogin:** highlighting active vs. inactive users.
+- **profile.preferences.location (2dsphere):** enables recommendations for users near based on their location.
 
-#### Venues Collection (4 indexes)
-```javascript
-// 1. Geospatial venue discovery (HIGHEST PRIORITY)
-db.venues.createIndex({ location: "2dsphere" });
+### Tickets Collection
+- **eventId + userId:** fastest path to answer “does this user already hold a ticket for this event”.
+- **userId:** backs “My Tickets” views for potential future profile pages.
+- **eventId:** feeds organizer-facing sales counts via computed pattern.
+- **status + purchasedAt:** allows chronological status dashboards for tickets.
 
-// 2. Venue type + capacity filtering (HIGH PRIORITY)
-db.venues.createIndex({ venueType: 1, capacity: 1 });
-
-// 3. Venue type + rating filtering (MEDIUM PRIORITY)
-db.venues.createIndex({ venueType: 1, rating: 1 });
-
-// 4. Basic venue type filtering (MEDIUM PRIORITY)
-db.venues.createIndex({ venueType: 1 });
-```
-
-#### Reviews Collection (4 indexes)
-```javascript
-// 1. Reviews by event (HIGHEST PRIORITY)
-db.reviews.createIndex({ eventId: 1 });
-
-// 2. Reviews by venue (HIGH PRIORITY)
-db.reviews.createIndex({ venueId: 1 });
-
-// 3. Event rating aggregations (HIGH PRIORITY)
-db.reviews.createIndex({ eventId: 1, rating: 1 });
-
-// 4. User review history (MEDIUM PRIORITY)
-db.reviews.createIndex({ userId: 1 });
-```
-
-#### Checkins Collection (4 indexes)
-```javascript
-// 1. Duplicate prevention (HIGHEST PRIORITY)
-db.checkins.createIndex({ eventId: 1, userId: 1 }, { unique: true });
-
-// 2. Event attendance tracking (HIGH PRIORITY)
-db.checkins.createIndex({ eventId: 1 });
-
-// 3. User attendance history (HIGH PRIORITY)
-db.checkins.createIndex({ userId: 1 });
-
-// 4. Ticket relationship (MEDIUM PRIORITY)
-db.checkins.createIndex({ ticketId: 1 });  // Link checkins to tickets - "which ticket was used for this checkin?"
-```
-
-#### Users Collection (4 indexes)
-```javascript
-// 1. User authentication (HIGHEST PRIORITY)
-db.users.createIndex({ email: 1 }, { unique: true });
-
-// 2. User registration analytics (MEDIUM PRIORITY)
-db.users.createIndex({ createdAt: 1 });
-
-// 3. Active user identification (MEDIUM PRIORITY)
-db.users.createIndex({ lastLogin: 1 });
-
-// 4. Location-based discovery (LOW PRIORITY)
-db.users.createIndex({ "profile.preferences.location": "2dsphere" });
-```
-
-### Performance Characteristics
-
-**Expected Query Performance** (with 10,000+ events):
-- Geospatial queries: < 50ms
-- Text search: < 100ms
-- Compound queries: < 75ms
-- Analytics aggregations: < 200ms
-- CRUD operations: < 25ms
+Refer to the scripts in `database/indexes/create_indexes.js` whenever the actual index definitions change; update this narrative only when the intent behind an index evolves.
 
 ## Query Patterns & Use Cases
 
-### 1. Geospatial Discovery
-```javascript
-// Find events within 50km of Vancouver
-db.events.aggregate([
-  {
-    $geoNear: {
-      near: { type: "Point", coordinates: [-123.1207, 49.2827] },
-      distanceField: "distance",
-      maxDistance: 50000,
-      spherical: true
-    }
-  }
-])
-```
-
-### 2. Text Search with Relevance
-```javascript
-// Search events with relevance scoring
-db.events.find(
-  { $text: { $search: "technology conference" } },
-  { score: { $meta: "textScore" } }
-).sort({ score: { $meta: "textScore" } })
-```
-
-### 3. Polymorphic Queries
-```javascript
-// Find all virtual events this month
-db.events.find({
-  "eventType": "virtual",
-  "startDate": { $gte: startOfMonth, $lte: endOfMonth }
-})
-
-// Find conference centers with high capacity
-db.venues.find({
-  "venueType": "conferenceCenter",
-  "capacity": { $gt: 500 }
-})
-```
-
-### 4. Complex Analytics
-```javascript
-// Venue performance analysis
-db.checkins.aggregate([
-  { $group: { 
-    _id: "$venueId", 
-    totalEvents: { $sum: 1 },
-    avgAttendance: { $avg: "$attendeeCount" }
-  }},
-  { $lookup: { 
-    from: "venues", 
-    localField: "_id", 
-    foreignField: "_id", 
-    as: "venue" 
-  }}
-])
-```
+Executable examples live under `queries/` (basic CRUD, aggregations, and analysis). This document explains the rationale behind the queries and their use cases.
 
 ## Data Validation & Quality
 

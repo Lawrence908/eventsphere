@@ -40,7 +40,6 @@ db.createCollection("events", {
                                 { bsonType: ["double", "int"], minimum: -180, maximum: 180 }, // longitude
                                 { bsonType: ["double", "int"], minimum: -90,  maximum: 90  }   // latitude
                             ],
-                            additionalItems: false,
                             minItems: 2,
                             maxItems: 2
                         }
@@ -179,7 +178,6 @@ db.createCollection("venues", {
                                 { bsonType: ["double", "int"], minimum: -180, maximum: 180 }, // longitude
                                 { bsonType: ["double", "int"], minimum: -90,  maximum: 90  }   // latitude
                             ],
-                            additionalItems: false,
                             minItems: 2,
                             maxItems: 2
                         }
@@ -273,7 +271,15 @@ db.createCollection("users", {
                                     bsonType: ["object", "null"],
                                     properties: {
                                         type: { enum: ["Point", null] },
-                                        coordinates: { bsonType: ["array", "null"], items: { bsonType: "double" }, minItems: 2, maxItems: 2 }
+                                        coordinates: {
+                                            bsonType: "array",
+                                            items: [
+                                                { bsonType: ["double", "int"], minimum: -180, maximum: 180 }, // longitude
+                                                { bsonType: ["double", "int"], minimum: -90,  maximum: 90  }   // latitude
+                                            ],
+                                            minItems: 2,
+                                            maxItems: 2
+                                        }
                                     }
                                 },
                                 radiusKm: { bsonType: ["double", "int", "long", "null"], minimum: 0 }
