@@ -72,10 +72,10 @@ EventSphere_664870797/
 ## Technology Stack
 
 ### Backend
-- **Python 3.11+** - Primary application language
+- **Python** - Primary application language
 - **Flask** - Web framework for API and web interface
 - **PyMongo** - MongoDB driver for Python
-- **MongoDB 7.0+** - Primary database
+- **MongoDB Atlas** - Primary database
 
 ### Frontend
 - **HTML5/CSS3** - Modern responsive web interface
@@ -91,51 +91,21 @@ EventSphere_664870797/
 ## Quick Start
 
 ### Prerequisites
-- Python 3.11+
-- MongoDB 7.0+
-- Node.js 18+ (for frontend dependencies)
+- mongosh installed
 
-### Installation
-
-1. **Clone the repository**
+### Connect to MongoDB Atlas and initialize database
+   
+   Replace `<your-connection-string>` with your MongoDB Atlas connection string:
    ```bash
-   git clone <repository-url>
-   cd mongo-events-demo
-   ```
-
-2. **Set up Python environment**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   pip install -r requirements.txt
-   ```
-
-3. **Configure MongoDB**
-   ```bash
-   # Update app/config.py with your MongoDB connection string
-   # Default: mongodb://localhost:27017/events_demo
-   ```
-
-4. **Initialize database**
-   ```bash
+   # Connect to MongoDB Atlas
+   mongosh "<your-connection-string>"
+   
    # Create collections with validation
-   mongosh < EventSphere_664870797/database/schemas/create_collections.js
+   mongosh "<your-connection-string>" < database/schemas/create_collections.js
    
    # Create indexes
-   mongosh < EventSphere_664870797/database/indexes/create_indexes.js
-   
-   # Load sample data
-   python generate_test_data.py --seed-db --events 1000 --venues 100 --users 500
+   mongosh "<your-connection-string>" < database/indexes/create_indexes.js
    ```
-
-5. **Run the application**
-   ```bash
-   python run.py
-   ```
-
-6. **Access the application**
-   - Web Interface: http://localhost:5000
-   - API Documentation: http://localhost:5000/api/docs
 
 ## Key Query Examples
 
@@ -182,22 +152,10 @@ db.checkins.aggregate([
 ])
 ```
 
-## Performance Benchmarks
-
-Based on testing with 10,000+ events:
-- **Geospatial queries**: < 50ms average response time
-- **Text search**: < 100ms with relevance scoring
-- **Complex aggregations**: < 200ms for analytics queries
-- **CRUD operations**: < 25ms for single document operations
-
 ## Advanced Features
 
-### Real-time Updates
-- WebSocket integration for live event updates
-- Change streams for database monitoring
-- Real-time attendance tracking
-
 ### Analytics Dashboard
+- Computed statistics for events and venues.
 - Event popularity trends
 - Venue utilization metrics
 - User engagement analytics
@@ -208,65 +166,3 @@ Based on testing with 10,000+ events:
 - Radius-based event discovery
 - Location-aware recommendations
 - Venue proximity analysis
-
-## Project Completion Status
-
-### Completed Components
-- [x] Database schema design with validation
-- [x] Core application functionality
-- [x] Geospatial query implementation
-- [x] Text search capabilities
-- [x] Basic CRUD operations
-- [x] Sample data generation
-- [x] Index optimization
-- [x] Real-time features
-
-### In Progress
-- [ ] Comprehensive query documentation
-- [ ] Project report writing
-- [ ] Presentation slide creation
-- [ ] Performance testing documentation
-
-### Pending
-- [ ] Learning reflection document
-- [ ] Final testing and validation
-- [ ] Documentation review and polish
-
-**Current Completion: ~75%**
-
-## Submission Checklist
-
-### Database Implementation
-- [x] MongoDB database with 4+ collections
-- [x] 1000+ realistic sample records
-- [x] Schema validation rules implemented
-- [x] All relationship types demonstrated
-- [x] Polymorphic design patterns
-
-### Queries and Operations
-- [x] 25+ different queries documented
-- [x] CRUD operations for all collections
-- [x] 3+ complex aggregation pipelines
-- [x] Performance optimization with indexes
-- [x] Text search implementation
-- [x] Geospatial queries
-- [x] 5+ strategic indexes
-
-### Documentation
-- [x] Database design document
-- [ ] Query documentation (in progress)
-- [ ] Final project report (pending)
-
-### Presentation Materials
-- [ ] Presentation slides (pending)
-
-## Contact Information
-
-**Chris Lawrence**  
-Student ID: 664 870 797  
-Email: [student-email]  
-Course: CSCI 485 - Fall 2025  
-
-## License
-
-This project is created for academic purposes as part of CSCI 485 coursework.
