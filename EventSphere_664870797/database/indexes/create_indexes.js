@@ -25,6 +25,14 @@ db.events.createIndex({
     description: "text", 
     category: "text", 
     tags: "text" 
+}, {
+    weights: {
+        title: 10,        // Highest priority - title matches are most relevant
+        category: 5,      // Medium-high - category is important for filtering
+        tags: 3,          // Medium - tags provide context but less specific
+        description: 1    // Lower - descriptions are longer and less precise
+    },
+    name: "text_search_index"  // Give it a specific name for better readability
 }); 
 // Enables full-text search with relevance scoring
 
