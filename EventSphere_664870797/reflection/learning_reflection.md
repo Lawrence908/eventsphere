@@ -38,7 +38,7 @@ The polymorphic pattern was another adjustment. In SQL, I'd split every event ty
 
 This project shifted how I think about database design. I stopped seeing the database as "where the data goes" and started treating it as a core part of the system architecture. Patterns like the computed pattern showed me that doing work early can prevent expensive work later. Thinking in terms of read-patterns, data closeness, and document shape felt natural by the end.
 
-There's more I want to explore, like change streams, GridFS, live analytics, real-time updates. But now the foundations are in place, and that makes the advanced features easier to pick up down the road.
+There's more I want to explore, like transactions, change streams, GridFS, live analytics, and real-time updates. Unfortunately, we didn't get to cover MongoDB transactions in class, but I'm looking forward to learning how to implement multi-document ACID transactions for critical operations like ticket booking in future projects. The foundations are now in place, and that makes these advanced features easier to pick up down the road.
 
 ---
 
@@ -60,8 +60,10 @@ And I walk away with another portfolio project that I can use to showcase the sy
 
 [EventSphere Demo Website](https://eventsphere.chrislawrence.ca/)
 
+Thank you for the opportunity to learn about MongoDB and NoSQL. I've enjoyed the course and learned a lot!
+
 ---
 
 **Key Technologies:** MongoDB (Atlas), Python, Flask, JavaScript, HTML/CSS  
-**Features Implemented:** Geospatial queries, text search, analytics, polymorphic schema, strategic indexing
+**Features Implemented:** Geospatial queries, text search, analytics, polymorphic schema, strategic indexing, in depth documentation!
 
