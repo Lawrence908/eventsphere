@@ -4,8 +4,8 @@
 **Student ID:** 664 870 797  
 **Student Name:** Chris Lawrence  
 **Course:** CSCI 485 - Topics in Computer Science (MongoDB/NoSQL)  
-**Semester:** Fall 2025  
-**Instructor:** Dr. Mehdi Khani  
+**Section:** F25N01   
+**Instructor:** Dr. Kawal Jeet  
 **Submission Date:** November 30, 2025  
 
 ---
@@ -14,1205 +14,543 @@
 
 1. [Summary](#summary)
 2. [Project Overview](#project-overview)
-3. [Technical Implementation](#technical-implementation)
-4. [Database Design & Architecture](#database-design--architecture)
-5. [Advanced MongoDB Features](#advanced-mongodb-features)
-6. [Query Implementation & Performance](#query-implementation--performance)
-7. [Application Development](#application-development)
-8. [Testing & Validation](#testing--validation)
-9. [Performance Analysis](#performance-analysis)
-10. [Challenges & Solutions](#challenges--solutions)
-11. [Learning Outcomes](#learning-outcomes)
-12. [Future Enhancements](#future-enhancements)
-13. [Conclusion](#conclusion)
-14. [References](#references)
-15. [Appendices](#appendices)
+3. [Technical Stack](#technical-stack)
+4. [Key Queries and Results](#key-queries-and-results)
+5. [How Queries Influenced Database Design](#how-queries-influenced-database-design)
+6. [Validation and Aggregation Choices](#validation-and-aggregation-choices)
+7. [Performance Analysis](#performance-analysis)
+8. [Challenges & Solutions](#challenges--solutions)
+9. [Learning Outcomes](#learning-outcomes)
+10. [Conclusion](#conclusion)
 
 ---
 
 ## Summary
 
-EventSphere is a MongoDB-based event management system that demonstrates advanced NoSQL database concepts through real-world application design. The project showcases sophisticated geospatial discovery, full-text search capabilities, and modern web application architecture.
+EventSphere is a MongoDB-based event management system demonstrating advanced NoSQL database concepts through real-world application design. This report focuses on the **query implementations**, **sample results from actual database operations**, and **how query requirements shaped the database design decisions**.
 
 ### Key Achievements
 
-- **Database Design**: 6 collections with 24 strategic indexes optimized for sub-100ms query performance
-- **Advanced Patterns**: Polymorphic design, extended references, computed statistics, and schema versioning
-- **Data Volume**: 60000+ realistic documents demonstrating querying and aggregation capabilities
-- **Query Complexity**: 25+ documented queries including complex aggregation pipelines
-- **Performance**: Comprehensive benchmarking with optimization recommendations
-- **Dual Ticket Architecture**: Embedded EventTickets (types) and separate Tickets collection (purchases)
+| Requirement | Target | Achieved |
+|-------------|--------|----------|
+| Collections | 4+ | **6** |
+| Sample Records | 1000+ | **1,089,392** |
+| Queries | 25+ | **30+** |
+| Aggregations | 3+ | **6** |
+| Indexes | 5+ | **24** |
 
-### Technical Highlights
+![MongoDB Data Explorer](mongodb.png)
 
-- **Geospatial Queries**: 2dsphere indexes with $geoNear aggregation for location-based discovery
-- **Text Search**: Multi-field text indexes with relevance scoring
-- **Polymorphic Design**: Events and venues support multiple types with type-specific attributes
-- **Analytics**: Complex aggregation pipelines for business intelligence
-- **Scalability**: Horizontal scaling readiness with proper sharding strategies
+> **Design Documentation**: For ERD/CRD diagrams and design pattern explanations, see [`database_design.pdf`](../documentation/database_design.pdf).
+> 
+> **Query Scripts**: For executable MongoDB queries, see [`geospatial_aggregations.js`](../queries/aggregations/geospatial_aggregations.js), [`text_search_aggregations.js`](../queries/aggregations/text_search_aggregations.js), and [`date_range_aggregations.js`](../queries/aggregations/date_range_aggregations.js).
+> 
+> **Schema Definitions**: For JSON Schema validation rules, see [`create_collections.js`](../database/schemas/create_collections.js)
 
 ---
 
 ## Project Overview
 
-### Domain Selection & Justification
+### Domain Selection Rationale
 
-EventSphere addresses the complex requirements of modern event management, chosen for its ability to demonstrate:
+Event management is ideal for demonstrating MongoDB capabilities because:
 
-1. **Schema Flexibility**: Events have diverse attributes (virtual meetings, recurring schedules, hybrid formats)
-2. **Geospatial Requirements**: Location-based discovery and venue management
-3. **Complex Relationships**: Many-to-many relationships between users, events, and venues
-5. **Analytics Requirements**: Revenue tracking, attendance patterns, and performance metrics
+1. **Schema Flexibility**: Events have diverse attributes (virtual meetings, recurring schedules, hybrid formats) that would be awkward in rigid relational schemas
+2. **Geospatial Requirements**: "Find events near me" is a core feature requiring 2dsphere indexes
+3. **Complex Relationships**: Users attend events, events have venues, users write reviews - multiple relationship types
+4. **Analytics Requirements**: Revenue tracking, attendance patterns, and category analysis require aggregation pipelines
 
-### Business Requirements
+### Business Requirements Driving Query Design
 
-The system supports the following core business processes:
-
-- **Event Discovery**: Users find events by location, category, date, and text search
-- **Event Management**: Organizers create and manage events with flexible attributes
-- **Venue Management**: Comprehensive venue catalog with geospatial data
-- **Attendance Tracking**: QR code check-ins with analytics support
-- **Review System**: Event and venue reviews with rating aggregation
-- **Analytics**: Revenue tracking, attendance patterns, and performance metrics
-
-### Success Criteria
-
-- Sub-100ms query performance for common operations
-- Support for 1000+ concurrent users (simulated)
-- Comprehensive data validation and integrity
-- Production-ready architecture and security
+| Business Need | Query Type | MongoDB Feature Used |
+|---------------|------------|---------------------|
+| "Events near me" | Geospatial | `$geoNear` with 2dsphere index |
+| "Search for tech events" | Full-text search | Text index with weights |
+| "Events this weekend" | Date range + location | Compound pipeline |
+| "Event attendance stats" | Analytics | `$group`, `$lookup` aggregations |
+| "User check-in history" | Relationship traversal | `$lookup` with multiple collections |
 
 ---
 
-## Technical Implementation
+## Technical Stack
 
-### Technology Stack
-
-#### Backend Technologies
-- **Python 3.11+**: Primary application language
-- **Flask 2.3+**: Web framework for API and web interface
-- **PyMongo 4.5+**: MongoDB driver with connection pooling
-- **MongoDB 7.0+**: Primary database with replica set configuration
-
-#### Frontend Technologies
-- **HTML5/CSS3**: Modern responsive web interface
-- **JavaScript (ES6+)**: Interactive features with dynamic UI behaviors
-- **Leaflet.js**: Interactive maps for geospatial features
-- **Chart.js**: Data visualization for analytics dashboard
-
-#### Development Tools
-- **MongoDB Compass**: Database visualization and query testing
-- **Postman**: API testing and documentation
-- **Git**: Version control with feature branching
-- **pytest**: Comprehensive test suite
-
-### Architecture Overview
-
-```
-┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   Web Browser   │    │   Mobile App    │    │   API Clients   │
-└─────────┬───────┘    └─────────┬───────┘    └─────────┬───────┘
-          │                      │                      │
-          └──────────────────────┼──────────────────────┘
-                                 │
-                    ┌─────────────┴─────────────┐
-                    │     Load Balancer         │
-                    └─────────────┬─────────────┘
-                                 │
-                    ┌─────────────┴─────────────┐
-                    │     API Gateway           │
-                    └─────────────┬─────────────┘
-                                 │
-          ┌──────────────────────┼──────────────────────┐
-          │                      │                      │
-┌─────────┴───────┐    ┌─────────┴───────┐    ┌─────────┴───────┐
-│ App Server 1    │    │ App Server 2    │    │ App Server N    │
-└─────────┬───────┘    └─────────┬───────┘    └─────────┬───────┘
-          │                      │                      │
-          └──────────────────────┼──────────────────────┘
-                                 │
-                    ┌─────────────┴─────────────┐
-                    │   MongoDB Replica Set     │
-                    │  ┌─────┐ ┌─────┐ ┌─────┐  │
-                    │  │ P   │ │ S   │ │ S   │  │
-                    │  └─────┘ └─────┘ └─────┘  │
-                    └───────────────────────────┘
-```
-
-### Application Structure
-
-```
-EventSphere/
-├── app/
-│   ├── __init__.py          # Flask application factory
-│   ├── config.py            # Configuration management
-│   ├── database.py          # MongoDB connection and utilities
-│   ├── models.py            # Data models and validation
-│   ├── services.py          # Business logic layer
-│   ├── schema_validation.py # JSON Schema validation
-│   ├── geocoding.py         # Geospatial utilities
-│   ├── utils.py             # Helper functions
-│   ├── static/              # CSS, JavaScript, images
-│   └── templates/           # HTML templates
-├── tests/                   # Comprehensive test suite
-├── generate_test_data.py    # Data generation utility
-└── run.py                   # Application entry point
-```
+EventSphere uses **Python/Flask** backend with **PyMongo** for MongoDB connectivity, deployed on **MongoDB Atlas**. The frontend uses **Bootstrap 5** and **Leaflet.js** for map visualizations. Query implementations are documented in `app/services.py`, with standalone query scripts in the `queries/` directory.
 
 ---
 
-## Database Design & Architecture
+## Key Queries and Results
 
-### Collection Design Strategy
+This section documents the most important queries used in the EventSphere application.
 
-The database implements a carefully designed collection structure optimized for event management workflows:
+### 1. Geospatial Event Discovery (`$geoNear`)
 
-#### 1. Events Collection (Primary)
-- **Purpose**: Core event catalog with polymorphic design
-- **Documents**: 1000+ events with diverse attributes
-- **Key Features**: GeoJSON locations, polymorphic event types, embedded EventTickets (ticket types)
-- **Note**: Individual user purchases are in separate Tickets collection
+**Application Use**: Powers the main "Events Near You" feature on the homepage and map interface.
 
-#### 2. Venues Collection
-- **Purpose**: Venue catalog with geospatial data
-- **Documents**: 500+ venues across multiple types
-- **Key Features**: Polymorphic venue types, complete address data, availability schedules
-
-#### 3. Users Collection
-- **Purpose**: User profiles with location-based preferences
-- **Documents**: 2000+ users with realistic data
-- **Key Features**: Geospatial preferences, category interests, activity tracking
-
-#### 4. Tickets Collection (User Purchases)
-- **Purpose**: Individual user ticket purchases - separate collection for scalability
-- **Documents**: 5000+ ticket purchase records
-- **Key Features**: References events and users, purchase tracking, status management
-- **Architecture**: Separate from embedded EventTickets (ticket types) in events collection
-
-#### 5. Checkins Collection (Bridge)
-- **Purpose**: Many-to-many relationship for attendance tracking
-- **Documents**: 5000+ check-in records
-- **Key Features**: QR code support, location tracking, analytics metadata
-
-#### 6. Reviews Collection
-- **Purpose**: Event and venue review system
-- **Documents**: 3000+ reviews with ratings
-- **Key Features**: 1-5 star ratings, comment system, temporal tracking
-
-### Advanced Design Patterns
-
-#### Polymorphic Design Pattern
-
-**Events Polymorphism**:
+**MongoDB Query** (from `app/services.py` - `EventService.get_events_nearby`):
 ```javascript
-// Base event structure
-{
-  "eventType": "hybrid", // Discriminator
-  "title": "Tech Summit 2025",
-  // ... common fields
-  
-  // Type-specific fields
-  "hybridDetails": {
-    "virtualCapacity": 300,
-    "inPersonCapacity": 200,
-    "virtualMeetingUrl": "https://teams.microsoft.com/j/321999401"
-  }
-}
-```
-
-**Venues Polymorphism**:
-```javascript
-// Base venue structure
-{
-  "venueType": "conferenceCenter", // Discriminator
-  "name": "Vancouver Convention Centre",
-  // ... common fields
-  
-  // Type-specific fields
-  "conferenceCenterDetails": {
-    "breakoutRooms": 25,
-    "avEquipment": ["Projectors", "Sound System"],
-    "cateringAvailable": true
-  }
-}
-```
-
-#### Extended Reference Pattern
-
-Denormalizes frequently accessed venue data into events for performance:
-
-```javascript
-{
-  "venueId": ObjectId("..."),
-  "venueReference": {          // Extended reference
-    "name": "Convention Center",
-    "city": "Vancouver", 
-    "capacity": 2500,
-    "venueType": "conferenceCenter"
-  }
-}
-```
-
-**Benefits**:
-- Eliminates joins for event listings
-- Enables venue-based filtering without lookups
-- Supports complex queries like "events at parks in Vancouver"
-
-#### Computed Pattern
-
-Pre-calculates statistics for dashboard performance:
-
-```javascript
-"computedStats": {
-  "totalTicketsSold": 125,
-  "totalRevenue": 16875.00,
-  "attendanceRate": 25.0,
-  "reviewCount": 8,
-  "averageRating": 4.3,
-  "lastUpdated": ISODate("2025-10-01T23:16:16.047Z")
-}
-```
-
-#### Schema Versioning
-
-All collections include versioning for future evolution:
-
-```javascript
-{
-  "schemaVersion": "1.0",
-  // ... document fields
-}
-```
-
-### Relationship Design
-
-#### 1:1 Relationships
-- **Venue ↔ Address**: Embedded subdocument for cohesion
-
-#### 1:Many Relationships  
-- **Venue → Events**: Reference from `events.venueId` to avoid venue bloat
-- **User → Reviews**: Reference from `reviews.userId` for scalability
-
-#### Many:Many Relationships
-- **Users ↔ Events**: Bridge collection (`checkins`) for analytics support
-- Avoids unbounded arrays in user or event documents
-- Enables complex attendance analytics
-
----
-
-## Advanced MongoDB Features
-
-### 1. Geospatial Queries
-
-#### Implementation
-```javascript
-// 2dsphere indexes for geospatial data
-db.events.createIndex({ location: "2dsphere" });
-db.venues.createIndex({ location: "2dsphere" });
-db.users.createIndex({ "profile.preferences.location": "2dsphere" });
-```
-
-#### Query Examples
-```javascript
-// Find events within 50km of Vancouver
 db.events.aggregate([
-  {
-    $geoNear: {
-      near: { type: "Point", coordinates: [-123.1207, 49.2827] },
-      distanceField: "distance",
-      maxDistance: 50000,
-      spherical: true
+    {
+        $geoNear: {
+            near: {
+                type: "Point",
+                coordinates: [-123.9351, 49.0831]  // Nanaimo coordinates
+            },
+            distanceField: "distance",
+            maxDistance: 50000,  // 50km in meters
+            spherical: true
+        }
+    },
+    {
+        $limit: 50
     }
-  }
 ])
 ```
 
-#### Performance Results
-- **Query Time**: 15-45ms for radius queries up to 100km
-- **Index Efficiency**: 99.8% index hit ratio
-- **Scalability**: Linear performance up to 100,000 documents
-
-### 2. Text Search
-
-#### Implementation
-```javascript
-// Multi-field text index with weights
-db.events.createIndex({
-  title: "text",
-  description: "text", 
-  category: "text",
-  tags: "text"
-}, {
-  weights: {
-    title: 10,
-    category: 5,
-    tags: 3,
-    description: 1
-  }
-});
-```
-
-#### Query Examples
-```javascript
-// Search with relevance scoring
-db.events.find(
-  { $text: { $search: "technology conference AI" } },
-  { score: { $meta: "textScore" } }
-).sort({ score: { $meta: "textScore" } })
-```
-
-#### Performance Results
-- **Query Time**: 25-85ms for complex text searches
-- **Relevance Accuracy**: 92% user satisfaction in testing
-- **Language Support**: English with stemming and stop words
-
-### 3. Aggregation Pipelines
-
-#### Complex Analytics Pipeline
-```javascript
-// Event performance analysis
-db.events.aggregate([
-  { $match: { status: "published" } },
-  { $lookup: { from: "reviews", localField: "_id", foreignField: "eventId", as: "reviews" } },
-  { $lookup: { from: "checkins", localField: "_id", foreignField: "eventId", as: "checkins" } },
-  { $addFields: {
-    avgRating: { $avg: "$reviews.rating" },
-    attendeeCount: { $size: "$checkins" },
-    attendanceRate: { $multiply: [{ $divide: [{ $size: "$checkins" }, "$maxAttendees"] }, 100] }
-  }},
-  { $group: {
-    _id: "$category",
-    eventCount: { $sum: 1 },
-    avgRating: { $avg: "$avgRating" },
-    totalAttendees: { $sum: "$attendeeCount" },
-    avgAttendanceRate: { $avg: "$attendanceRate" }
-  }},
-  { $sort: { totalAttendees: -1 } }
-])
-```
-
-#### Performance Optimization
-- **Pipeline Stages**: Optimized order with $match early
-- **Index Usage**: Leverages compound indexes effectively
-- **Memory Management**: Uses allowDiskUse for large datasets
-
-### 4. Transactions
-
-#### Multi-Document Transactions
-```javascript
-// Atomic ticket booking
-const session = client.startSession();
-session.startTransaction();
-
-try {
-  // 1. Check seat availability
-  const event = await db.events.findOne({ _id: eventId }, { session });
-  
-  // 2. Deduct available seats
-  await db.events.updateOne(
-    { _id: eventId },
-    { $inc: { "tickets.0.available": -1, "tickets.0.sold": 1 } },
-    { session }
-  );
-  
-  // 3. Create check-in record
-  await db.checkins.insertOne({
-    eventId: eventId,
-    userId: userId,
-    // ... other fields
-  }, { session });
-  
-  await session.commitTransaction();
-} catch (error) {
-  await session.abortTransaction();
-  throw error;
-} finally {
-  await session.endSession();
-}
-```
-
-
-## Query Implementation & Performance
-
-### Query Categories
-
-#### 1. Basic CRUD Operations (8 files)
-- **Events CRUD**: Create, read, update, delete operations
-- **Venues CRUD**: Venue management operations
-- **Users CRUD**: User profile management
-- **Reviews CRUD**: Review system operations
-- **Checkins CRUD**: Attendance tracking operations
-
-#### 2. Aggregation Pipelines (3 files)
-- **Geospatial Aggregations**: Location-based analytics
-- **Analytics Aggregations**: Business intelligence queries
-- **Text Search Aggregations**: Search analytics and recommendations
-
-#### 3. Analysis Queries (2 files)
-- **Performance Analysis**: Query optimization and benchmarking
-- **Business Intelligence**: Revenue analysis and market insights
-
-### Performance Benchmarks
-
-#### Query Performance Results (10,000+ events)
-
-| Query Type | Avg Response Time | Index Used | Docs Examined |
-|------------|------------------|------------|---------------|
-| Geospatial (50km radius) | 42ms | 2dsphere | 156 |
-| Text Search | 78ms | text | 89 |
-| Category Filter | 12ms | category_1 | 45 |
-| Date Range | 18ms | startDate_1 | 234 |
-| Compound (category+date) | 25ms | category_1_startDate_1 | 67 |
-| Complex Aggregation | 156ms | Multiple | 1000+ |
-
-#### Index Effectiveness
-
-- **Index Hit Ratio**: 98.7% across all queries
-- **Index Size**: 15.2MB (12% of collection size)
-- **Write Impact**: <5% performance degradation
-- **Memory Usage**: 89% of indexes cached in RAM
-
-### Query Optimization Techniques
-
-#### 1. Strategic Index Design
-```javascript
-// Compound indexes for common query patterns
-db.events.createIndex({ category: 1, startDate: 1 });
-db.events.createIndex({ location: "2dsphere", startDate: 1 });
-db.events.createIndex({ eventType: 1, category: 1 });
-```
-
-#### 2. Aggregation Optimization
-```javascript
-// Optimized pipeline order
-db.events.aggregate([
-  { $match: { status: "published" } },        // Filter early
-  { $sort: { startDate: 1 } },                // Use index for sorting
-  { $lookup: { /* ... */ } },                 // Lookup after filtering
-  { $limit: 50 }                              // Limit results
-])
-```
-
-#### 3. Projection Optimization
-```javascript
-// Return only needed fields
-db.events.find(
-  { category: "Technology" },
-  { title: 1, startDate: 1, price: 1, location: 1 }
-)
-```
+**How it's used in the app**: The `EventService.get_events_nearby()` method accepts user coordinates, converts the radius from km to meters, and returns results as GeoJSON FeatureCollection for map rendering. Results include distance calculations and venue information embedded via the extended reference pattern.
 
 ---
 
-## Application Development
+### 2. Weekend Events with Location Filter
 
-### Flask Application Architecture
+**Application Use**: Powers a future feature of a "This Weekend" quick filter button, showing events happening Friday 5pm through Sunday 11:59pm within a radius.
 
-#### Application Factory Pattern
-```python
-def create_app(config_name='default'):
-    app = Flask(__name__)
-    app.config.from_object(config[config_name])
-    
-    # Initialize extensions
-    db.init_app(app)
-    socketio.init_app(app)
-    
-    # Register blueprints
-    from .api import api_bp
-    app.register_blueprint(api_bp, url_prefix='/api')
-    
-    return app
-```
-
-#### Service Layer Architecture
-```python
-class EventService:
-    def __init__(self, db):
-        self.db = db
-        self.collection = db.events
-    
-    async def find_nearby_events(self, coordinates, radius_km=50):
-        pipeline = [
-            {
-                "$geoNear": {
-                    "near": {"type": "Point", "coordinates": coordinates},
-                    "distanceField": "distance",
-                    "maxDistance": radius_km * 1000,
-                    "spherical": True
-                }
-            }
-        ]
-        return await self.collection.aggregate(pipeline).to_list(length=100)
-```
-
-### API Design
-
-#### RESTful Endpoints
-```
-GET    /api/events              # List events with filtering
-POST   /api/events              # Create new event
-GET    /api/events/{id}         # Get event details
-PUT    /api/events/{id}         # Update event
-DELETE /api/events/{id}         # Delete event
-
-GET    /api/events/nearby       # Geospatial search
-GET    /api/events/search       # Text search
-GET    /api/events/analytics    # Analytics data
-
-POST   /api/events/{id}/checkin # Check into event
-GET    /api/events/{id}/reviews # Get event reviews
-POST   /api/events/{id}/reviews # Add event review
-```
-
-#### Response Format
-```json
-{
-  "success": true,
-  "data": {
-    "events": [...],
-    "pagination": {
-      "page": 1,
-      "limit": 20,
-      "total": 156,
-      "pages": 8
-    }
-  },
-  "meta": {
-    "query_time": "42ms",
-    "cached": false
-  }
-}
-```
-
-
-## Testing & Validation
-
-### Test Suite Overview
-
-#### Unit Tests (45 tests)
-- **Models**: Data validation and serialization
-- **Services**: Business logic and database operations
-- **Utilities**: Helper functions and geocoding
-- **Schemas**: JSON Schema validation
-
-#### Integration Tests (32 tests)
-- **API Endpoints**: Complete request/response cycles
-- **Database Operations**: CRUD operations with real data
-- **Authentication**: User authentication and authorization
-
-#### Performance Tests (15 tests)
-- **Query Performance**: Response time benchmarks
-- **Load Testing**: Concurrent user simulation
-- **Memory Usage**: Resource utilization monitoring
-- **Index Effectiveness**: Query plan analysis
-
-### Test Results
-
-#### Unit Test Coverage
-```
-Name                    Stmts   Miss  Cover
--------------------------------------------
-app/__init__.py           45      2    96%
-app/models.py            156      8    95%
-app/services.py          234     12    95%
-app/database.py           89      3    97%
-app/utils.py              67      4    94%
--------------------------------------------
-TOTAL                    591     29    95%
-```
-
-#### Performance Test Results
-```
-Test Suite: Query Performance
-==============================
-✓ Geospatial queries: 42ms avg (target: <50ms)
-✓ Text search: 78ms avg (target: <100ms)
-✓ Complex aggregations: 156ms avg (target: <200ms)
-✓ CRUD operations: 18ms avg (target: <25ms)
-
-Test Suite: Load Testing
-========================
-✓ 100 concurrent users: 95% success rate
-✓ 500 concurrent users: 89% success rate
-✓ 1000 concurrent users: 78% success rate
-```
-
-### Data Validation
-
-#### JSON Schema Validation
-```python
-event_schema = {
-    "type": "object",
-    "required": ["title", "category", "location", "startDate"],
-    "properties": {
-        "title": {"type": "string", "minLength": 1, "maxLength": 200},
-        "location": {
-            "type": "object",
-            "required": ["type", "coordinates"],
-            "properties": {
-                "type": {"enum": ["Point"]},
-                "coordinates": {
-                    "type": "array",
-                    "items": {"type": "number"},
-                    "minItems": 2,
-                    "maxItems": 2
-                }
+**MongoDB Query** :
+```javascript
+db.events.aggregate([
+    {
+        $geoNear: {
+            near: {
+                type: "Point",
+                coordinates: [-123.9351, 49.0831]
+            },
+            distanceField: "distance",
+            maxDistance: 50000,
+            spherical: true,
+            key: "location"
+        }
+    },
+    {
+        $match: {
+            startDate: {
+                $gte: ISODate("2025-11-28T17:00:00Z"),  // Friday 5pm
+                $lte: ISODate("2025-11-30T23:59:59Z")   // Sunday midnight
             }
         }
+    },
+    {
+        $sort: { startDate: 1 }
+    },
+    {
+        $limit: 50
+    }
+])
+```
+
+**How it's used in the app**: The aggregation pipeline will be used in the app to filter events by date range and location, returning a list of events that are happening this weekend for the given location.
+
+---
+
+### 3. Full-Text Search with Relevance Scoring
+
+**Application Use**: Powers the search bar functionality on the event detail page, allowing users to search across event titles, descriptions, categories, and tags.
+
+**MongoDB Query** (from `app/services.py` - `EventService.get_events` with search parameter):
+```javascript
+db.events.find(
+    { $text: { $search: "technology workshop" } },
+    { score: { $meta: "textScore" } }
+).sort(
+    { score: { $meta: "textScore" } }
+).limit(50)
+```
+
+**How it's used in the app**: When the `search` parameter is provided to `get_events()`, the query switches from standard filtering to text search mode. The text index has weighted fields: `title` (weight 10), `category` (weight 5), `tags` (weight 3), and `description` (weight 1), ensuring title matches rank highest in results.
+
+---
+
+### 4. User Attendance History with Lookups
+
+**Application Use**: Powers the future feature of a user profile page showing check-in history with full event and venue details.
+
+**MongoDB Query** :
+```javascript
+db.checkins.aggregate([
+    {
+        $match: { userId: ObjectId("...") }
+    },
+    {
+        $lookup: {
+            from: "events",
+            localField: "eventId",
+            foreignField: "_id",
+            as: "event"
+        }
+    },
+    {
+        $lookup: {
+            from: "venues",
+            localField: "venueId",
+            foreignField: "_id",
+            as: "venue"
+        }
+    },
+    { $unwind: "$event" },
+    { $unwind: "$venue" },
+    { $sort: { checkInTime: -1 } },
+    { $limit: 50 },
+    {
+        $project: {
+            _id: 1,
+            eventId: 1,
+            venueId: 1,
+            checkInTime: 1,
+            checkInMethod: 1,
+            ticketTier: 1,
+            event_title: "$event.title",
+            event_category: "$event.category",
+            venue_name: "$venue.name",
+            venue_city: "$venue.address.city"
+        }
+    }
+])
+```
+
+**How it's used in the app**: This query will be used in the app to get the attendance history for a user, pulling together checkin records with related event and venue information through multiple `$lookup` stages and `$unwind` operations.
+
+---
+---
+
+### 6. Index Performance Analysis
+
+To demonstrate the critical impact of indexes on query performance, this section compares three key index types: geospatial queries using the 2dsphere index, compound index queries for filtered and sorted results, and single-field indexes for simple equality filters. Detailed performance analysis queries can be found in `queries/analysis/index_analysis.js`.
+
+#### Index 1: Geospatial Query (2dsphere Index)
+
+The geospatial query finds events within 50km of a specific location using the `$geoNear` aggregation stage. The 2dsphere index on the `location` field is **required** for this query to function - without it, the query would fail with the following error:
+
+```javascript
+planner returned error :: caused by :: unable to find index for $geoNear query
+```
+
+The index enables MongoDB to efficiently calculate distances and sort results by proximity.
+
+**Performance Results** (from `explain("executionStats")`):
+- **Server Execution Time**: 39ms
+- **Documents Examined**: 380 (from 150,000 total)
+- **Keys Examined**: 427
+- **Documents Returned**: 50 (after `$limit` stage)
+- **Index Used**: `location_2dsphere`
+- **Index Scan Type**: GEO_NEAR_2DSPHERE
+
+**Analysis**: The 2dsphere index enables efficient geospatial calculations, examining only 380 documents (0.25% of the collection) to find 50 events within 50km. The index uses a two-stage search interval approach, buffering candidates at different distance ranges before returning the closest matches. Without this index, the query would fail entirely, as `$geoNear` requires a 2dsphere index to function.
+
+#### Index 2: Compound Index Query (Category + Date)
+
+The compound index on `(category, startDate)` provides optimal performance for queries that filter by category and sort by date. Unlike a single-field index, the compound index eliminates in-memory sorting by providing pre-sorted results directly from the index. This is one of the most significant performance advantages, as in-memory sorting is expensive and scales poorly with large datasets.
+
+**Performance Results with Compound Index** (from `explain("executionStats")`):
+- **Server Execution Time**: 7ms
+- **Keys Examined**: 50
+- **Documents Examined**: 50 (exactly the limit)
+- **Index Used**: `category_1_startDate_1`
+- **Index Scan Type**: IXSCAN (Index Scan)
+- **Index Seeks**: 1
+- **In-Memory Sort**: No (results pre-sorted by index)
+
+**Performance Results without Compound Index** (index dropped for comparison):
+- **Server Execution Time**: 211ms (**30x slower**)
+- **Keys Examined**: 0 (no index used)
+- **Documents Examined**: 150,000 (**3,000x more** - full collection scan)
+- **Technology Events Found**: 9,435 (but required scanning entire collection)
+- **Execution Plan**: COLLSCAN (collection scan) → SORT (in-memory sort)
+- **Data Sorted**: 59,183 bytes in memory
+- **In-Memory Sort**: Yes (required sorting 9,435 Technology events)
+
+**Performance Comparison**:
+
+| Metric | With Compound Index | Without Index | Difference |
+|--------|-------------------|---------------|------------|
+| **Execution Time** | 7ms | 211ms | **30x slower** |
+| **Documents Examined** | 50 | 150,000 | **3,000x more** |
+| **Keys Examined** | 50 | 0 | N/A |
+| **Index Seeks** | 1 | N/A | N/A |
+| **In-Memory Sort** | No | Yes | Required |
+| **Execution Plan** | IXSCAN → FETCH → LIMIT | COLLSCAN → SORT → LIMIT | Much more expensive |
+
+**Analysis**: The compound index provides dramatic performance improvements. With the index, MongoDB performs a single index seek, examines exactly 50 documents (the limit), and returns pre-sorted results in 7ms. Without the index, MongoDB must scan all 150,000 documents to find 9,435 Technology events, then sort them in memory before returning 50 results - taking 211ms. The compound index eliminates both the collection scan and the expensive in-memory sort operation, demonstrating why proper indexing is critical for query performance.
+
+#### Index 3: Single-Field Index Query (Venue Type)
+
+Single-field indexes provide efficient filtering for equality queries on frequently queried fields. This comparison demonstrates the performance difference between using a dedicated single-field index versus relying on a compound index for a simple equality filter.
+
+**Query**: Find conference center venues
+
+**Performance Results with Single-Field Index** (from `explain("executionStats")`):
+- **Server Execution Time**: 2ms
+- **Keys Examined**: 50
+- **Documents Examined**: 50 (exactly the limit)
+- **Index Used**: `venueType_1`
+- **Index Scan Type**: IXSCAN (Index Scan)
+- **Index Seeks**: 1
+
+**Performance Results without Single-Field Index** (using compound index `venueType_1_capacity_1`):
+- **Server Execution Time**: 48ms (**24x slower**)
+- **Keys Examined**: 50
+- **Documents Examined**: 50
+- **Index Used**: `venueType_1_capacity_1` (compound index)
+- **Index Scan Type**: IXSCAN (Index Scan)
+- **Index Seeks**: 1
+
+**Performance Comparison**:
+
+| Metric | With Single-Field Index | Without (Compound Index) | Difference |
+|--------|------------------------|--------------------------|------------|
+| **Execution Time** | 2ms | 48ms | **24x slower** |
+| **Documents Examined** | 50 | 50 | Same |
+| **Keys Examined** | 50 | 50 | Same |
+| **Index Seeks** | 1 | 1 | Same |
+| **Index Used** | `venueType_1` | `venueType_1_capacity_1` | Compound index |
+
+**Analysis**: While both queries examine the same number of documents (50), the single-field index executes **24x faster** (2ms vs 48ms). This demonstrates that even when a compound index can satisfy a query, a dedicated single-field index provides superior performance for simple equality filters. The compound index includes an additional field (`capacity`) that adds overhead to the index structure, making the single-field index more efficient for this specific query pattern. This highlights the importance of creating targeted indexes for common query patterns, even when compound indexes exist.
+
+**Key Benefits**:
+- **Geospatial Index**: Enables proximity search and is required for `$geoNear` operations
+- **Compound Index**: Eliminates in-memory sorting, provides pre-sorted results, and minimizes document examination to exactly the limit needed
+- **Single-Field Index**: Provides optimal performance for simple equality filters, outperforming compound indexes even when they can satisfy the query
+
+**Summary**: All three index types demonstrate excellent performance. The compound index achieves 30x faster execution (7ms vs 211ms) and examines 3,000x fewer documents (50 vs 150,000), the geospatial index efficiently narrows large datasets to relevant results within the specified distance, and the single-field index provides 24x faster execution (2ms vs 48ms) compared to using a compound index for simple equality queries.
+
+---
+
+## How Queries Influenced Database Design
+
+The query patterns required by the application directly shaped the database schema decisions:
+
+### 1. Extended Reference Pattern → Avoids $lookup for Event Listings
+
+**Query Requirement**: Display event cards with venue name and city without additional database calls.
+
+**Design Decision**: Embed `venueReference` in events:
+```javascript
+{
+    "venueId": ObjectId("..."),       // Keep reference for updates
+    "venueReference": {                // Embed for reads
+        "name": "Convention Centre",
+        "city": "Vancouver",
+        "capacity": 2500,
+        "venueType": "conferenceCenter"
     }
 }
 ```
 
-#### Input Sanitization
-```python
-def sanitize_input(data):
-    """Sanitize user input to prevent XSS and injection attacks"""
-    if isinstance(data, str):
-        # Remove HTML tags and escape special characters
-        data = bleach.clean(data, strip=True)
-        data = html.escape(data)
-    elif isinstance(data, dict):
-        return {k: sanitize_input(v) for k, v in data.items()}
-    elif isinstance(data, list):
-        return [sanitize_input(item) for item in data]
-    
-    return data
+**Impact**: Event listing queries return venue info in a single query instead of requiring `$lookup`:
+```javascript
+// Without extended reference (slower):
+db.events.aggregate([
+    { $match: { category: "Technology" } },
+    { $lookup: { from: "venues", localField: "venueId", foreignField: "_id", as: "venue" } }
+])
+
+// With extended reference (faster):
+db.events.find({ category: "Technology" })
+// venueReference already embedded - no lookup needed!
+```
+
+---
+
+### 2. Computed Pattern → Avoids Expensive Aggregations for Dashboards
+
+**Query Requirement**: Display event statistics (tickets sold, revenue, average rating) on dashboards.
+
+**Design Decision**: Pre-calculate and store in `computedStats` field, including `totalTicketsSold`, `totalRevenue`, `attendanceRate`, `reviewCount`, and `averageRating`.
+
+**Impact**: Dashboard queries become simple field reads instead of expensive cross-collection aggregations with multiple `$lookup` stages, dramatically improving response times for dashboard views.
+
+---
+
+### 3. Bridge Collection (Checkins) → Enables Analytics Flexibility
+
+**Query Requirement**: Answer questions like "Which users attended the most events?" and "What's the peak check-in time?"
+
+**Design Decision**: Use a dedicated `checkins` collection instead of embedding attendees in events, storing `eventId`, `userId`, `venueId`, `checkInTime`, `checkInMethod`, and `ticketTier`.
+
+**Impact**: Analytics queries become straightforward using `$group` aggregations on the checkins collection, enabling analysis of repeat attendees, peak check-in times, and attendance patterns that would be difficult or impossible with embedded arrays.
+
+---
+
+### 4. Dual Ticket Architecture → Balances Read Performance and Scalability
+
+**Query Requirement**: Show ticket tiers with event listings (fast), but also query "all tickets for user X" (scalable).
+
+**Design Decision**: Embed ticket types in events, separate ticket purchases:
+
+```javascript
+// Embedded in events (bounded, always displayed):
+"tickets": [
+    { "tier": "Early Bird", "price": 35, "available": 500, "sold": 250 },
+    { "tier": "VIP", "price": 150, "available": 50, "sold": 45 }
+]
+
+// Separate tickets collection (unbounded, independent queries):
+{
+    "eventId": ObjectId("..."),
+    "userId": ObjectId("..."),
+    "ticketTier": "VIP",
+    "pricePaid": 150.00,
+    "status": "active"
+}
+```
+
+**Impact**: Both query patterns are efficient:
+```javascript
+// Fast event listing with pricing (embedded):
+db.events.find({ category: "Music" }, { title: 1, tickets: 1 })
+
+// User's purchased tickets (separate collection):
+db.tickets.find({ userId: ObjectId("...") })
+```
+
+---
+
+## Validation and Aggregation Choices
+
+### Schema Validation Decisions
+
+MongoDB JSON Schema validation enforces data integrity at the database level:
+
+| Validation Rule | Field | Purpose |
+|-----------------|-------|---------|
+| Coordinate bounds | `location.coordinates` | Prevent invalid lat/lng values |
+| Enum constraint | `eventType` | Only allow: inPerson, virtual, hybrid, recurring |
+| Enum constraint | `venueType` | Only allow: conferenceCenter, park, restaurant, virtualSpace, stadium, theater |
+| Required fields | `title, category, location, startDate` | Ensure minimum event data |
+| Range validation | `rating` | Constrain to 1-5 stars |
+| Unique index | `users.email` | Prevent duplicate accounts |
+| Unique compound | `checkins.{eventId, userId}` | One check-in per user per event |
+
+> **Full validation schemas**: See `database/schemas/create_collections.js`
+
+### Aggregation Pipeline Optimization
+
+Key optimization techniques used in EventSphere aggregations:
+
+1. **`$match` early**: Filter documents before expensive operations
+2. **`$project` to limit fields**: Reduce memory usage in pipeline
+3. **Index-supported `$sort`**: Leverage compound indexes
+4. **`$limit` when possible**: Stop processing early
+
+Example optimized pipeline:
+```javascript
+db.events.aggregate([
+    { $match: { status: "published", category: "Technology" } },  // Filter first (uses index)
+    { $sort: { startDate: 1 } },                                   // Sort (uses compound index)
+    { $limit: 50 },                                                // Stop early
+    { $project: { title: 1, startDate: 1, price: 1 } }            // Return only needed fields
+])
 ```
 
 ---
 
 ## Performance Analysis
 
-### Database Performance
+### Query Performance Results
 
-#### Collection Statistics
-```
-EVENTS Collection:
-  Documents: 10,247
-  Avg Document Size: 2.8 KB
-  Total Size: 28.7 MB
-  Storage Size: 12.4 MB
-  Indexes: 15
-  Index Size: 4.2 MB
-
-VENUES Collection:
-  Documents: 523
-  Avg Document Size: 3.2 KB
-  Total Size: 1.7 MB
-  Storage Size: 0.8 MB
-  Indexes: 8
-  Index Size: 0.3 MB
-```
-
-#### Query Performance Analysis
-
-**Geospatial Query Performance**:
-```
-Query: Find events within 50km of Vancouver
-Execution Time: 42ms
-Documents Examined: 156
-Documents Returned: 23
-Index Used: location_2dsphere
-Efficiency: 14.7% (23/156)
-```
-
-**Text Search Performance**:
-```
-Query: Search for "technology conference"
-Execution Time: 78ms
-Documents Examined: 89
-Documents Returned: 12
-Index Used: title_text_description_text_category_text_tags_text
-Efficiency: 13.5% (12/89)
-```
-
-**Compound Index Performance**:
-```
-Query: Technology events in November 2025
-Execution Time: 25ms
-Documents Examined: 67
-Documents Returned: 67
-Index Used: category_1_startDate_1
-Efficiency: 100% (67/67)
-```
-
-### Application Performance
-
-#### Response Time Analysis
-```
-Endpoint Performance (1000 requests):
-=====================================
-GET /api/events                 : 45ms avg, 89ms p95
-GET /api/events/nearby          : 67ms avg, 125ms p95
-GET /api/events/search          : 89ms avg, 156ms p95
-POST /api/events                : 78ms avg, 134ms p95
-GET /api/events/{id}            : 23ms avg, 45ms p95
-```
-
-#### Memory Usage
-```
-Application Memory Usage:
-========================
-Base Memory: 125 MB
-Peak Memory: 234 MB (during complex aggregations)
-Average Memory: 156 MB
-Memory Efficiency: 87%
-
-Database Memory Usage:
-=====================
-WiredTiger Cache: 512 MB
-Index Cache Hit Ratio: 98.7%
-Data Cache Hit Ratio: 94.3%
-```
-
-### Optimization Recommendations
-
-#### Database Optimizations
-1. **Index Optimization**:
-   - Monitor index usage with `db.collection.getIndexes()`
-   - Remove unused indexes to improve write performance
-   - Consider partial indexes for frequently filtered fields
-
-2. **Query Optimization**:
-   - Use projection to limit returned fields
-   - Leverage index hints for complex queries
-   - Use cursor-based pagination for large datasets
-
-3. **Aggregation Optimization**:
-   - Use `$match` early in pipelines
-   - Consider `allowDiskUse` for memory-intensive operations
-   - Optimize pipeline stage order
-
-#### Application Optimizations
-1. **Caching Strategy**:
-   - Implement Redis for popular events and search results
-   - Use application-level caching for computed statistics
-   - Cache geospatial query results with TTL
-
-2. **Connection Optimization**:
-   - Use connection pooling with appropriate pool size
-   - Implement connection health checks
-   - Monitor connection usage patterns
+| Query Type | Avg Response Time | Index Used |
+|------------|------------------|------------|
+| Geospatial (50km radius) | 39ms | location_2dsphere |
+| Text Search | 78ms | text index |
+| Category Filter | 12ms | category_1_startDate_1 |
+| CRUD Operations | 18ms | Various |
 
 ---
 
 ## Challenges & Solutions
 
-### Technical Challenges
+### 1. Geospatial + Date Range Filtering
 
-#### 1. Geospatial Query Complexity
+**Challenge**: Combining geospatial proximity with date filtering efficiently.
 
-**Challenge**: Implementing efficient location-based event discovery with complex filtering requirements.
+**Solution**: Use `$geoNear` as first pipeline stage, then `$match` for date filtering:
+```javascript
+db.events.aggregate([
+    { $geoNear: { ... } },      // Must be first
+    { $match: { startDate: { $gte: fridayDate, $lte: sundayDate } } }
+])
+```
+
+### 2. Text Search Relevance
+
+**Challenge**: Matching event titles should rank higher than description matches.
+
+**Solution**: Weighted text index:
+```javascript
+db.events.createIndex(
+    { title: "text", description: "text", category: "text", tags: "text" },
+    { weights: { title: 10, category: 5, tags: 3, description: 1 } }
+)
+```
+
+### 3. Many-to-Many Attendance Tracking
+
+**Challenge**: Users attend many events, events have many users. Embedding either direction causes unbounded growth.
+
+**Solution**: Bridge collection (`checkins`) with unique compound index to prevent duplicates.
+
+### 4. MongoDB Atlas Quota Management and Scaling Limits
+
+**Challenge**: During the later stages of the project, I had the idea of maximizing data density within the 512MB free tier quota while maintaining query performance and ensuring all indexes fit.
+
+**Experience**: During data seeding, I successfully inserted **1,089,392 documents** across 6 collections, with all **24 indexes** created within the quota constraints. The final database configuration included:
+- **30,000 venues** (12.70 MB storage, 2.38 MB indexes)
+- **60,000 users** (11.65 MB storage, 6.45 MB indexes)
+- **150,000 events** (61.95 MB storage, 27.98 MB indexes)
+- **550,000 tickets** (27.79 MB storage, 41.33 MB indexes)
+- **150,241 checkins** (18.48 MB storage, 11.14 MB indexes)
+- **149,151 reviews** (10.16 MB storage, 9.79 MB indexes)
+
+**Key Observations**:
+
+1. **Quota Reporting Discrepancy**: MongoDB Atlas shell operations (inserts) report quota errors at approximately 520 MB / 512 MB, while the Data Explorer dashboard shows total storage sizes summing to ~142.7 MB.
+This confirms discussions in class about overhead the way memory is allocated in MongoDB.
+
+2. **Index Space Allocation**: Indexes consumed approximately **34.7 MB** (24% of total storage), with the largest indexes on high-cardinality collections:
+   - Tickets collection: 16.05 MB (largest due to 550K documents and multiple indexes)
+   - Events collection: 4.98 MB (despite being the largest collection by document size)
+   - Checkins collection: 5.01 MB
+
+3. **Frontend Performance Considerations**: Loading all events on the map interface without pagination or result limits caused significant frontend performance degradation. This highlighted the importance of:
+   - Implementing query result limits in API endpoints
+   - Using pagination for large result sets
+   - Client-side result capping for map visualizations
 
 **Solution**: 
-- Implemented 2dsphere indexes with proper coordinate validation
-- Used $geoNear aggregation for distance-based sorting
-- Optimized query performance with compound geospatial indexes
-
-**Result**: Achieved 42ms average response time for 50km radius queries.
-
-#### 2. Polymorphic Schema Design
-
-**Challenge**: Supporting multiple event types (virtual, hybrid, recurring) with type-specific attributes while maintaining query efficiency.
-
-**Solution**:
-- Implemented discriminator pattern with `eventType` field
-- Used conditional validation based on event type
-- Created type-specific indexes for optimal query performance
-
-**Result**: Flexible schema supporting 4 event types with minimal query overhead.
-
-#### 4. Complex Aggregation Performance
-
-**Challenge**: Business intelligence queries requiring multiple collection joins and complex calculations.
-
-**Solution**:
-- Implemented computed pattern for pre-calculated statistics
-- Optimized aggregation pipeline order with early filtering
-- Used allowDiskUse for memory-intensive operations
-
-**Result**: Complex analytics queries execute in under 200ms.
-
-### Data Challenges
-
-#### 1. Data Quality and Consistency
-
-**Challenge**: Ensuring data quality across 1000+ generated records with realistic relationships.
-
-**Solution**:
-- Implemented comprehensive JSON Schema validation
-- Created sophisticated data generation with proper referential integrity
-- Added application-level validation for business rules
-
-**Result**: 99.8% data quality score with realistic test data.
-
-#### 2. Geospatial Data Accuracy
-
-**Challenge**: Generating realistic geospatial data for venues and events across multiple cities.
-
-**Solution**:
-- Used real coordinate data for major cities
-- Implemented coordinate bounds validation
-- Added geospatial utility functions for distance calculations
-
-**Result**: Accurate geospatial queries with proper coordinate validation.
-
-### Performance Challenges
-
-#### 1. Index Strategy Optimization
-
-**Challenge**: Balancing query performance with write performance and storage overhead.
-
-**Solution**:
-- Analyzed query patterns to identify optimal compound indexes
-- Implemented strategic index design with 24 total indexes (4 per collection, 6 collections)
-- Regular monitoring of index usage and effectiveness
-
-**Result**: 98.7% index hit ratio with minimal write performance impact.
-
-#### 2. Memory Management
-
-**Challenge**: Managing memory usage during large aggregation operations.
-
-**Solution**:
-- Implemented allowDiskUse for memory-intensive aggregations
-- Optimized pipeline stages to reduce memory footprint
-- Added memory usage monitoring and alerting
-
-**Result**: Stable memory usage under 250MB even during complex operations.
-
+- Implemented a batched data insertion script in my `generate_test_data.py` script that prevented connection timeouts during large bulk operations. Iterated as I hit errors to find the sweet spot for the maximum number of documents that could be inserted without exceeding the quota.
 ---
 
 ## Learning Outcomes
 
-### Technical Skills Developed
+### MongoDB Skills Developed
 
-#### 1. Advanced MongoDB Concepts
+1. **Geospatial Queries**: 2dsphere indexes, `$geoNear` aggregation, coordinate validation
+2. **Text Search**: Weighted text indexes, relevance scoring with `$meta: "textScore"`
+3. **Aggregation Pipelines**: Multi-stage pipelines, `$lookup`, `$group`, `$facet`
+4. **Schema Design**: Polymorphic patterns, extended reference, computed pattern
+5. **Indexing Strategy**: Compound indexes, query plan analysis, performance tuning
 
-**Geospatial Queries**:
-- Mastered 2dsphere indexes and GeoJSON data structures
-- Implemented complex location-based queries with $geoNear
-- Learned coordinate system concepts and distance calculations
+### Key Insights
 
-**Text Search**:
-- Implemented multi-field text indexes with custom weights
-- Mastered relevance scoring and search result ranking
-- Learned text search optimization techniques
-
-**Aggregation Framework**:
-- Developed complex multi-stage aggregation pipelines
-- Mastered lookup operations and data transformation
-- Learned aggregation performance optimization
-
-**Schema Design**:
-- Implemented polymorphic design patterns
-- Mastered embedding vs. referencing decisions
-- Learned schema versioning strategies
-
-#### 2. Database Architecture
-
-**Performance Optimization**:
-- Learned strategic index design principles
-- Mastered query performance analysis and optimization
-- Implemented caching strategies for improved performance
-
-**Scalability Planning**:
-- Understood sharding concepts and implementation
-- Learned replica set configuration and management
-- Implemented horizontal scaling strategies
-
-**Data Modeling**:
-- Mastered NoSQL data modeling principles
-- Learned relationship design in document databases
-- Implemented advanced design patterns
-
-#### 3. Application Development
-
-**Full-Stack Development**:
-- Developed complete web application with Flask
-- Implemented RESTful API design principles
-
-**Testing and Quality Assurance**:
-- Implemented comprehensive test suites
-- Learned performance testing and benchmarking
-- Mastered data validation and quality assurance
-
-### Conceptual Understanding
-
-#### 1. NoSQL vs. SQL Trade-offs
-
-**Advantages of MongoDB for Event Management**:
-- Schema flexibility for diverse event types
-- Superior geospatial query capabilities
-- Horizontal scaling for high-traffic applications
-- Document structure matches application objects
-
-**When to Choose NoSQL**:
-- Rapid development with changing requirements
-- Geospatial or full-text search requirements
-- Horizontal scaling needs
-- Complex nested data structures
-
-#### 2. CAP Theorem Application
-
-**EventSphere CAP Analysis**:
-- **Consistency**: Eventual consistency acceptable for most operations
-- **Availability**: Critical for user experience during peak usage
-- **Partition Tolerance**: Required for distributed deployment
-
-**Design Decisions**:
-- Strong consistency for ticket booking operations
-- Eventual consistency for analytics and recommendations
-- Availability prioritized for event discovery features
-
-#### 3. Production Considerations
-
-**Security**:
-- Implemented comprehensive input validation
-- Learned authentication and authorization patterns
-- Understood data privacy and compliance requirements
-
-**Monitoring and Maintenance**:
-- Implemented performance monitoring and alerting
-- Learned backup and recovery strategies
-- Understood capacity planning and scaling
-
-### Professional Development
-
-#### 1. Project Management
-
-**Planning and Execution**:
-- Learned to break complex projects into manageable tasks
-- Implemented iterative development with regular milestones
-- Mastered time management for large-scale projects
-
-**Documentation**:
-- Developed comprehensive technical documentation
-- Learned to communicate complex technical concepts clearly
-- Implemented code documentation best practices
-
-#### 2. Problem-Solving Skills
-
-**Analytical Thinking**:
-- Learned to analyze complex performance problems
-- Developed systematic debugging approaches
-- Mastered root cause analysis techniques
-
-**Creative Solutions**:
-- Implemented innovative design patterns for complex requirements
-- Learned to balance competing technical constraints
-- Developed optimization strategies for performance challenges
+- **Query-first design**: Design schemas around the queries you need to run
+- **Denormalization trade-offs**: Embedding improves reads but complicates updates
+- **Index selectivity**: More selective indexes = better performance
+- **Bridge collections**: Essential for M:N relationships with relationship attributes
 
 ---
-
-## Future Enhancements
-
-### Phase 1: Advanced Features (3-6 months)
-
-#### Machine Learning Integration
-- **Recommendation Engine**: Collaborative filtering for personalized event suggestions
-- **Predictive Analytics**: Attendance prediction based on historical data
-- **Natural Language Processing**: Advanced search with query understanding
-
-#### Enhanced User Experience
-- **Mobile Application**: Native iOS/Android apps with offline support
-- **Progressive Web App**: Enhanced mobile web experience
-- **Advanced Filtering**: Faceted search with dynamic filters
-
-#### Analytics Dashboard
-- **Business Intelligence**: Advanced reporting and data visualization
-- **Predictive Insights**: Trend analysis and forecasting
-
-### Phase 2: Enterprise Features (6-12 months)
-
-#### Multi-tenant Architecture
-- **Organization Management**: Support for multiple event organizers
-- **Role-based Access Control**: Granular permissions and user roles
-- **White-label Solutions**: Customizable branding and features
-
-#### Advanced Integrations
-- **Payment Processing**: Stripe/PayPal integration for ticket sales
-- **Calendar Integration**: Google Calendar, Outlook synchronization
-- **Social Media**: Facebook, Twitter event promotion
-- **Email Marketing**: Automated email campaigns and notifications
-
-#### Performance and Scalability
-- **Microservices Architecture**: Service decomposition for better scalability
-- **API Gateway**: Rate limiting, authentication, and monitoring
-- **Caching Layer**: Redis cluster for improved performance
-- **CDN Integration**: Global content delivery for static assets
-
-### Phase 3: AI and Innovation (12+ months)
-
-#### Artificial Intelligence
-- **Chatbot Integration**: AI-powered event discovery assistant
-- **Image Recognition**: Automatic event categorization from images
-- **Sentiment Analysis**: Review sentiment analysis and insights
-- **Dynamic Pricing**: AI-driven ticket pricing optimization
-
-#### Advanced Analytics
-- **Data Lake Integration**: Historical data analysis with Hadoop/Spark
-- **Machine Learning Pipeline**: Automated model training and deployment
-- **A/B Testing Framework**: Systematic feature testing and optimization
-
-#### Emerging Technologies
-- **Blockchain Integration**: Secure ticket verification and transfer
-- **IoT Integration**: Smart venue sensors for capacity monitoring
-- **Augmented Reality**: AR-enhanced event discovery and navigation
-- **Voice Integration**: Voice-activated event search and booking
-
-### Technical Roadmap
-
-#### Database Evolution
-```
-Current: Single MongoDB Instance
-    ↓
-Phase 1: Replica Set (3 nodes)
-    ↓
-Phase 2: Sharded Cluster (3 shards, 3 config servers)
-    ↓
-Phase 3: Multi-region Deployment
-```
-
-#### Architecture Evolution
-```
-Current: Monolithic Flask Application
-    ↓
-Phase 1: Modular Monolith with Service Layer
-    ↓
-Phase 2: Microservices with API Gateway
-    ↓
-Phase 3: Event-Driven Architecture with Message Queues
-```
-
-#### Data Pipeline Evolution
-```
-Current: Batch Processing for Analytics
-    ↓
-Phase 1: Incremental Analytics with Scheduled ETL Jobs
-    ↓
-Phase 2: Warehouse-Oriented Analytics Platform
-    ↓
-Phase 3: ML Pipeline with Feature Store
-```
-
----
-
 ## Conclusion
 
-### Project Success Summary
+EventSphere demonstrates practical MongoDB expertise through **6 collections** with strategic schema design, **24 indexes** optimized for actual query patterns, and **1,089,392 documents** demonstrating real-world scale. The project showcases how query requirements drive design decisions - from extended references avoiding lookups, to computed patterns eliminating expensive aggregations, to bridge collections enabling flexible analytics.
 
-EventSphere successfully demonstrates comprehensive MongoDB expertise through a production-ready event management system. The project achieves all technical objectives while showcasing advanced NoSQL concepts and real-world applicability.
-
-#### Key Achievements
-
-**Technical Excellence**:
-- 6 collections with 24 strategic indexes
-- Sub-100ms query performance for common operations
-- 1000+ realistic sample records with proper relationships
-- 25+ documented queries including complex aggregations
-- Advanced design patterns (polymorphic, extended reference, computed)
-
-**Academic Objectives**:
-- Comprehensive demonstration of MongoDB features
-- Advanced aggregation pipelines for analytics
-- Geospatial queries with 2dsphere indexes
-- Text search with relevance scoring
-- Schema validation and data quality assurance
-- Performance optimization and benchmarking
-
-**Professional Standards**:
-- Production-ready architecture and security
-- Comprehensive testing and validation
-- Detailed documentation and code quality
-- Scalability planning and optimization
-- Industry best practices and patterns
-
-### Learning Impact
-
-This project significantly enhanced understanding of:
-
-1. **NoSQL Database Design**: Deep expertise in document-oriented database design principles
-2. **MongoDB Mastery**: Advanced features including geospatial queries, text search, and aggregations
-3. **Performance Optimization**: Strategic indexing and query optimization techniques
-4. **Full-Stack Development**: Complete web application development with modern technologies
-5. **System Architecture**: Scalable, maintainable system design principles
-
-### Industry Relevance
-
-The EventSphere system demonstrates patterns and technologies used by industry leaders:
-
-- **Airbnb**: Geospatial queries for location-based discovery
-- **Eventbrite**: Event management with flexible schema design
-- **MongoDB Atlas**: Advanced aggregation pipelines for analytics
-- **Netflix**: Recommendation systems with machine learning integration
-
-### Future Applications
-
-The skills and knowledge gained from this project are directly applicable to:
-
-- **E-commerce Platforms**: Product catalogs with flexible attributes
-- **Social Media Applications**: User-generated content with geospatial features
-- **IoT Data Management**: Time-series data with advanced analytics
-- **Content Management Systems**: Flexible document structures with search
-- **Financial Applications**: Transaction processing with analytics
-
-### Final Reflection
-
-EventSphere represents a culmination of advanced MongoDB concepts applied to solve real-world challenges. The project demonstrates not only technical proficiency but also the ability to design, implement, and optimize complex database systems for production use.
-
-The comprehensive approach to documentation, testing, and performance optimization reflects professional software development practices essential for career success in database and full-stack development roles.
-
-This project serves as a strong foundation for continued learning in NoSQL databases, distributed systems, and modern web application development.
+The index performance analysis highlights the critical importance of proper indexing strategy, and the geospatial index enabling proximity search that would be impossible without the 2dsphere index. Future enhancements could include account creation, user recommendations based on location and interests, and notification systems.
 
 ---
 
-## References
-
-### Technical Documentation
-1. MongoDB Documentation. (2025). *MongoDB Manual 7.0*. MongoDB Inc.
-2. Flask Documentation. (2025). *Flask Web Development Framework*. Pallets Projects.
-3. PyMongo Documentation. (2025). *Python Driver for MongoDB*. MongoDB Inc.
-
-### Academic Sources
-4. Chodorow, K. (2013). *MongoDB: The Definitive Guide*. O'Reilly Media.
-5. Banker, K. (2011). *MongoDB in Action*. Manning Publications.
-6. Seguin, P. (2014). *The Little MongoDB Book*. Self-published.
-
-### Industry Best Practices
-7. MongoDB Inc. (2025). *MongoDB Best Practices Guide*. Technical White Paper.
-8. Fowler, M. (2013). *NoSQL Distilled: A Brief Guide to the Emerging World of Polyglot Persistence*. Addison-Wesley.
-9. Newman, S. (2015). *Building Microservices*. O'Reilly Media.
-
-### Performance and Optimization
-10. MongoDB Inc. (2025). *Performance Best Practices for MongoDB*. Technical Guide.
-11. Kamps, J. & Marx, M. (2005). *Words in Multiple Contexts: How to identify them?*. Information Retrieval Technology.
-
----
-
-## Appendices
-
-### Appendix A: Database Schema Definitions
-[Complete JSON Schema validation rules for all collections]
-
-### Appendix B: Query Performance Benchmarks
-[Detailed performance test results and analysis]
-
-### Appendix C: API Documentation
-[Complete REST API documentation with examples]
-
-### Appendix D: Deployment Guide
-[Step-by-step deployment instructions for production]
-
-### Appendix E: Test Results
-[Comprehensive test suite results and coverage reports]
-
----
-
-**Document Information**
-- **Total Pages**: 25
-- **Word Count**: ~12,000 words
-- **Last Updated**: October 2025
-- **Version**: 1.0
-- **Status**: Final Submission
+### Thank you for your time and consideration!
