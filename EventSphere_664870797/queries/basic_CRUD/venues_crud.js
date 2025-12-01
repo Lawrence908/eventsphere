@@ -4,6 +4,7 @@
 // CSCI 485 - Fall 2025
 
 // ===== CREATE OPERATIONS =====
+
 db.venues.insertOne({
     name: "Pacific Conference Centre - Richmond",
     venueType: "conferenceCenter",
@@ -12,7 +13,7 @@ db.venues.insertOne({
     description: "Modern conference facility near Vancouver International Airport with state-of-the-art technology.",
     location: {
         type: "Point",
-        coordinates: [-123.1836, 49.1666] // Richmond, BC
+        coordinates: [-123.1836, 49.1666]
     },
     address: {
         street: "8788 McKim Way",
@@ -64,8 +65,6 @@ db.venues.insertOne({
     updatedAt: new Date()
 });
 
-// Create multiple venues with different types
-print("Creating multiple venues with insertMany...");
 db.venues.insertMany([
     {
         name: "The Orpheum Theatre",
@@ -156,75 +155,37 @@ db.venues.insertMany([
 ]);
 
 // ===== READ OPERATIONS =====
-print("\n2. READ OPERATIONS");
-print("-".repeat(30));
 
-// Find all venues
-print("Finding all venues (limited to 3):");
-db.venues.find().limit(3).forEach(venue => {
-    print(`- ${venue.name} (${venue.venueType}) - Capacity: ${venue.capacity}`);
-});
+db.venues.find().limit(3);
 
-// Find venues by type (polymorphic query)
-print("\nFinding conference center venues:");
-db.venues.find({ venueType: "conferenceCenter" }).forEach(venue => {
-    print(`- ${venue.name} - ${venue.conferenceCenterDetails?.breakoutRooms || 0} breakout rooms`);
-});
+db.venues.find({ venueType: "conferenceCenter" });
 
-// Find venues by capacity range
-print("\nFinding large venues (capacity > 1000):");
-db.venues.find({ capacity: { $gt: 1000 } }).forEach(venue => {
-    print(`- ${venue.name} - Capacity: ${venue.capacity}`);
-});
+db.venues.find({ capacity: { $gt: 1000 } });
 
-// Find venues by city
-print("\nFinding venues in Vancouver:");
-db.venues.find({ "address.city": "Vancouver" }).forEach(venue => {
-    print(`- ${venue.name} - ${venue.address.street}`);
-});
+db.venues.find({ "address.city": "Vancouver" });
 
-// Find venues with specific amenities
-print("\nFinding venues with WiFi and Parking:");
 db.venues.find({ 
     amenities: { $all: ["WiFi", "Parking"] }
-}).forEach(venue => {
-    print(`- ${venue.name} - ${venue.amenities.length} amenities`);
 });
 
-// Find venues by rating
-print("\nFinding highly rated venues (rating >= 4.5):");
-db.venues.find({ rating: { $gte: 4.5 } }).forEach(venue => {
-    print(`- ${venue.name} - Rating: ${venue.rating} (${venue.reviewCount} reviews)`);
-});
+db.venues.find({ rating: { $gte: 4.5 } });
 
-// Find venues with catering available
-print("\nFinding venues with catering:");
 db.venues.find({ 
     $or: [
         { "conferenceCenterDetails.cateringAvailable": true },
         { amenities: "Catering" }
     ]
-}).forEach(venue => {
-    print(`- ${venue.name} - ${venue.venueType}`);
 });
 
-// Complex query with geospatial and capacity filters
-print("\nFinding venues in Vancouver area with capacity 500-3000:");
 db.venues.find({
     "location.coordinates.0": { $gte: -123.3, $lte: -123.0 },
     "location.coordinates.1": { $gte: 49.2, $lte: 49.3 },
     capacity: { $gte: 500, $lte: 3000 }
-}).forEach(venue => {
-    print(`- ${venue.name} - Capacity: ${venue.capacity}`);
 });
 
 // ===== UPDATE OPERATIONS =====
-print("\n3. UPDATE OPERATIONS");
-print("-".repeat(30));
 
-// Update venue rating and review count
-print("Updating venue rating and review count...");
-const updateResult = db.venues.updateOne(
+db.venues.updateOne(
     { name: "Pacific Conference Centre - Richmond" },
     {
         $set: {
@@ -239,24 +200,18 @@ const updateResult = db.venues.updateOne(
         }
     }
 );
-print(`Updated ${updateResult.modifiedCount} document(s)`);
 
-// Update multiple venues' pricing
-print("Updating pricing for all conference centers...");
-const multiUpdateResult = db.venues.updateMany(
+db.venues.updateMany(
     { venueType: "conferenceCenter" },
     {
         $mul: { 
-            "pricing.hourlyRate": 1.05,  // 5% price increase
+            "pricing.hourlyRate": 1.05,
             "pricing.dailyRate": 1.05 
         },
         $set: { updatedAt: new Date() }
     }
 );
-print(`Updated ${multiUpdateResult.modifiedCount} document(s)`);
 
-// Add new amenity to venues
-print("Adding 'High-Speed Internet' amenity to all venues...");
 db.venues.updateMany(
     {},
     {
@@ -265,8 +220,6 @@ db.venues.updateMany(
     }
 );
 
-// Update embedded document (availability hours)
-print("Updating weekend hours for theaters...");
 db.venues.updateMany(
     { venueType: "theater" },
     {
@@ -280,21 +233,15 @@ db.venues.updateMany(
     }
 );
 
-// Update array element (specific amenity)
-print("Replacing 'WiFi' with 'High-Speed WiFi' in amenities...");
 db.venues.updateMany(
     { amenities: "WiFi" },
     {
-        $set: { "amenities.$": "High-Speed WiFi" },
-        $set: { updatedAt: new Date() }
+        $set: { "amenities.$": "High-Speed WiFi", updatedAt: new Date() }
     }
 );
 
 // ===== DELETE OPERATIONS =====
-print("\n4. DELETE OPERATIONS");
-print("-".repeat(30));
 
-// Create a test venue to delete
 db.venues.insertOne({
     name: "Test Venue for Deletion",
     venueType: "park",
@@ -315,28 +262,18 @@ db.venues.insertOne({
     updatedAt: new Date()
 });
 
-// Delete the test venue
-print("Deleting test venue...");
-const deleteResult = db.venues.deleteOne({
+db.venues.deleteOne({
     name: "Test Venue for Deletion"
 });
-print(`Deleted ${deleteResult.deletedCount} document(s)`);
 
-// Delete venues with no events (careful with this!)
-print("Deleting venues with no hosted events...");
-const noEventsResult = db.venues.deleteMany({
+db.venues.deleteMany({
     "computedStats.totalEventsHosted": 0,
-    name: { $regex: /^Test/ } // Only delete test venues
+    name: { $regex: /^Test/ }
 });
-print(`Deleted ${noEventsResult.deletedCount} unused venue(s)`);
 
 // ===== ADVANCED CRUD OPERATIONS =====
-print("\n5. ADVANCED CRUD OPERATIONS");
-print("-".repeat(30));
 
-// Find and modify with sort
-print("Finding highest capacity venue and updating it...");
-const findAndModifyResult = db.venues.findOneAndUpdate(
+db.venues.findOneAndUpdate(
     { capacity: { $gt: 0 } },
     {
         $inc: { "computedStats.totalEventsHosted": 1 },
@@ -350,12 +287,7 @@ const findAndModifyResult = db.venues.findOneAndUpdate(
         returnDocument: "after"
     }
 );
-if (findAndModifyResult) {
-    print(`Updated venue: ${findAndModifyResult.name} - Capacity: ${findAndModifyResult.capacity}`);
-}
 
-// Bulk operations for venues
-print("Performing bulk write operations...");
 const bulkOps = [
     {
         updateOne: {
@@ -395,14 +327,10 @@ const bulkOps = [
     }
 ];
 
-const bulkResult = db.venues.bulkWrite(bulkOps);
-print(`Bulk operations completed: ${bulkResult.modifiedCount} modified, ${bulkResult.insertedCount} inserted`);
+db.venues.bulkWrite(bulkOps);
 
-// Clean up bulk test venue
 db.venues.deleteOne({ name: "Bulk Insert Test Venue" });
 
-// Aggregation-based update (update based on computed values)
-print("Updating venue categories based on capacity...");
 db.venues.updateMany(
     { capacity: { $gte: 1000 } },
     {
@@ -432,6 +360,3 @@ db.venues.updateMany(
         }
     }
 );
-
-print("\nVenues CRUD Operations completed successfully!");
-print("=".repeat(60));
