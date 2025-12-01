@@ -1,4 +1,5 @@
-# EventSphere Database Design Documentation
+# **Event***Sphere*: MongoDB Event Management System
+## Database Design
 
 **Student ID:** 664 870 797  
 **Student Name:** Chris Lawrence  
