@@ -78,7 +78,7 @@ db.reviews.createIndex({ eventId: 1, rating: 1 });
 
 // 4) User ID index (MEDIUM PRIORITY)
 db.reviews.createIndex({ userId: 1 }); 
-// User review history and posible future profile pages
+// User review history and possible future profile pages
 
 // ===== CHECKINS COLLECTION INDEXES (4 indexes) =====
 
@@ -88,7 +88,7 @@ db.checkins.createIndex({ eventId: 1, userId: 1 }, { unique: true });
 
 // 2) Event ID index (HIGH PRIORITY)
 db.checkins.createIndex({ eventId: 1 }); 
-// Event attendance tracking - this would be amost common query
+// Event attendance tracking - this would be one of the most common queries
 
 // 3) User ID index (HIGH PRIORITY)
 db.checkins.createIndex({ userId: 1 }); 

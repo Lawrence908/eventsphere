@@ -409,5 +409,3 @@ db.users.aggregate([
 ]).forEach(user => {
     print(`${user.name}: ${user.reviewCount} reviews, ${user.checkinCount} check-ins`);
 });
-
-print("CRUD operations completed");
