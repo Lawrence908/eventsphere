@@ -100,6 +100,24 @@ class MongoDB:
             pass
         return False
 
+    def get_total_document_count(self) -> int:
+        """Get total count of all documents across all collections"""
+        if not self.is_connected():
+            self.connect()
+        
+        total = 0
+        collections = ['events', 'venues', 'users', 'checkins', 'reviews', 'tickets']
+        
+        for collection_name in collections:
+            collection = getattr(self, collection_name, None)
+            if collection is not None:
+                try:
+                    total += collection.count_documents({})
+                except Exception:
+                    pass
+        
+        return total
+
     def list_indexes(self, collection_name: str = "events"):
         """List all indexes for a specific collection"""
         if not self.is_connected():

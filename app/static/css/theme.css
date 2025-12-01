@@ -747,4 +747,149 @@ body {
     }
 }
 
+/* Post-it Note Badge */
+.hero-content {
+    position: relative;
+}
+
+.post-it-note {
+    position: absolute;
+    top: 0;
+    right: 0;
+    z-index: 1000;
+    transform: rotate(5deg);
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.15));
+}
+
+@media (min-width: 992px) {
+    .post-it-note {
+        top: -60px;
+        right: -40px;
+    }
+}
+
+.post-it-content {
+    background: #ffeb3b;
+    background-image: 
+        repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 2px,
+            rgba(255, 255, 255, 0.1) 2px,
+            rgba(255, 255, 255, 0.1) 4px
+        ),
+        linear-gradient(135deg, #ffeb3b 0%, #ffc107 100%);
+    padding: 14px 18px;
+    border-radius: 2px;
+    box-shadow: 
+        0 8px 16px rgba(0, 0, 0, 0.25),
+        0 4px 8px rgba(0, 0, 0, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.3);
+    border-left: 1px solid rgba(255, 255, 255, 0.2);
+    border-right: 1px solid rgba(0, 0, 0, 0.1);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.15);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 180px;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+/* Subtle curl effect on top-right corner */
+.post-it-content::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 20px;
+    height: 20px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.3) 0%, transparent 50%);
+    border-radius: 0 0 0 20px;
+    box-shadow: inset -2px 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.post-it-content:hover {
+    transform: rotate(3deg) scale(1.02);
+    box-shadow: 
+        0 10px 20px rgba(0, 0, 0, 0.3),
+        0 5px 10px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.4),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+}
+
+.post-it-icon {
+    font-size: 1.5rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.post-it-icon svg {
+    width: 24px;
+    height: 24px;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.2));
+}
+
+.post-it-text {
+    display: flex;
+    flex-direction: column;
+    color: #333;
+}
+
+.post-it-text strong {
+    font-size: 0.95rem;
+    font-weight: 700;
+    line-height: 1.2;
+    color: #1a1a1a;
+}
+
+.post-it-text small {
+    font-size: 0.75rem;
+    color: #555;
+    line-height: 1.2;
+    margin-top: 2px;
+}
+
+@media (max-width: 768px) {
+    .post-it-note {
+        position: relative;
+        top: auto;
+        right: auto;
+        left: auto;
+        transform: rotate(3deg);
+        margin: -10px auto 20px auto;
+        width: fit-content;
+        filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.2));
+    }
+    
+    .post-it-content {
+        min-width: 150px;
+        padding: 12px 14px;
+    }
+    
+    .post-it-icon {
+        font-size: 1.25rem;
+    }
+    
+    .post-it-icon svg {
+        width: 20px;
+        height: 20px;
+    }
+    
+    .post-it-text strong {
+        font-size: 0.85rem;
+    }
+    
+    .post-it-text small {
+        font-size: 0.7rem;
+    }
+}
+
 

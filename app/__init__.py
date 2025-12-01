@@ -5,7 +5,7 @@ from flask import Flask, flash, jsonify, redirect, render_template, request, url
 from flask_socketio import SocketIO
 from pydantic import ValidationError
 
-from .database import mongodb
+from .database import mongodb, get_mongodb
 from .models import EventCreate, EventsNearbyQuery, EventUpdate, CheckinCreate, CheckinUpdate
 from .services import get_event_service, get_checkin_service, get_analytics_service
 from .realtime import init_realtime
@@ -37,7 +37,15 @@ def create_app():
     @app.route("/")
     def index():
         """Home page - landing page with phone mockup"""
-        return render_template("index.html")
+        try:
+            db = get_mongodb()
+            total_documents = db.get_total_document_count()
+        except Exception as e:
+            # If database connection fails, default to 0 or show error
+            print(f"Error getting document count: {e}")
+            total_documents = 0
+        
+        return render_template("index.html", total_documents=total_documents)
     
     @app.route("/map")
     def map_page():
