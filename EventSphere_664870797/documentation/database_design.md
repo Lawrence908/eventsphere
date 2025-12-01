@@ -3,97 +3,164 @@
 **Student ID:** 664 870 797  
 **Student Name:** Chris Lawrence  
 **Course:** CSCI 485 - Topics in Computer Science (MongoDB/NoSQL)  
-**Semester:** Fall 2025  
+**Section:** F25N01   
+**Instructor:** Dr. Kawal Jeet  
+**Submission Date:** November 30, 2025
+
+---
 
 ## Summary
 
 EventSphere is a MongoDB-based event management system that demonstrates advanced NoSQL database concepts through real-world application design. The system enables users to discover, review, and attend in-person, virtual, and hybrid events with geospatial discovery, full-text search, and index-optimized analytics capabilities.
 
-This document outlines the complete database design, including collection schemas, advanced design patterns, indexing strategies, and performance optimizations that showcase MongoDB's capabilities for event management applications.
+This document focuses on the database design rationale, including Entity-Relationship diagram, Collection-Relationship diagram, and detailed explanations of the design patterns and architectural decisions that shaped the database structure.
 
-## Database Architecture Overview
+**Note**: 
+- For complete schema validation rules, see [`create_collections.js`](../database/schemas/create_collections.js). 
 
-### Core Design Principles
+- For index definitions, see [`create_indexes.js`](../database/indexes/create_indexes.js). 
 
-1. **Schema Flexibility**: Dynamic event attributes and polymorphic design patterns
-2. **Performance Optimization**: Strategic indexing for sub-100ms query response times
-3. **Scalability**: Horizontal scaling readiness with proper sharding strategies
-4. **Real-world Applicability**: Production-ready patterns used by industry leaders
+- For query examples, see [`geospatial_aggregations.js`](../queries/aggregations/geospatial_aggregations.js), [`text_search_aggregations.js`](../queries/aggregations/text_search_aggregations.js), [`date_range_aggregations.js`](../queries/aggregations/date_range_aggregations.js), and [`analytics_aggregations.js`](../queries/aggregations/analytics_aggregations.js).
 
-### Collection Architecture
+---
 
-The database consists of 6 primary collections designed to handle complex relationships and high-performance queries:
+## Entity-Relationship Diagram (ERD)
 
-- **`events`** - Core event catalog with polymorphic event types and embedded ticket types
-- **`venues`** - Venue information with geospatial data and polymorphic types  
-- **`users`** - User profiles with location-based preferences
-- **`tickets`** - Individual user ticket purchases (separate collection for scalability)
-- **`checkins`** - Bridge collection for attendance tracking and analytics
-- **`reviews`** - Event and venue review system with rating aggregation
+![ER Diagram](er_diagram.svg)
+
+### ERD Design Notes
+NN refers to not nullable fields.
+
+The ERD represents the logical data model before MongoDB-specific optimizations. Key relationships:
+
+| Relationship | Type | Description |
+|--------------|------|-------------|
+| Venue → Events | 1:N | One venue hosts many events |
+| User ↔ Events | M:N | Many users attend many events (via Checkins) |
+| User → Reviews | 1:N | One user writes many reviews |
+| Event → Reviews | 1:N | One event has many reviews |
+| Venue → Reviews | 1:N | One venue has many reviews |
+| User → Tickets | 1:N | One user purchases many tickets |
+| Event → Tickets | 1:N | One event has many ticket purchases |
+| Checkin → Ticket | 1:1 (optional) | A checkin may reference a purchased ticket |
+
+---
+
+## Collection-Relationship Diagram (CRD)
+
+![CR Diagram](collection_diagram.svg)
+
+### CRD Design Notes
+
+`NN` refers to not nullable fields.
+
+The CRD shows how the logical ERD was transformed into MongoDB collections with strategic denormalization:
+
+| Collection | Document Count | Key Embedding/Reference Decisions |
+|------------|----------------|-----------------------------------|
+| events | 150,000 | Embeds: tickets array, venueReference. References: venueId |
+| venues | 30,000 | Embeds: address, contact, pricing, type-specific details |
+| users | 60,000 | Embeds: profile with nested preferences and location |
+| tickets | 550,000 | References: eventId, userId |
+| checkins | 150,241 | References: eventId, userId, venueId, ticketId (optional) |
+| reviews | 149,151 | References: eventId OR venueId (polymorphic), userId |
+
+
+
+### MongoDB Collection Diagram Comparison
+
+**Comparison:** An interesting comparison is that the MongoDB Collection Diagram is obviously similar to the CRD. But since MongoDB is reading schema from the database, it nicely displays the polymorphic design pattern in `venues` and `events`, giving a more concrete representation of the data creation.
+
+![MongoDB Collection Diagram](mongodb_crd.png)
+
+---
 
 ## Advanced Design Patterns
 
 ### 1. Polymorphic Design Pattern
 
-The database implements polymorphic design for both events and venues, allowing different entity types to have specialized attributes while maintaining a common base structure.
+**What it is**: A single collection stores documents of different "types" that share a common base structure but have type-specific attributes. A discriminator field (`eventType` or `venueType`) identifies which type each document belongs to.
+
+**Why EventSphere uses it**: Events and venues have diverse characteristics that would be awkward to model with separate collections or nullable fields everywhere.
 
 #### Event Polymorphism
-Events support four distinct types with type-specific attributes:
 
-- **`inPerson`**: Traditional physical events at venues
-- **`virtual`**: Online-only events with virtual meeting details  
-- **`hybrid`**: Events with both physical and virtual components
-- **`recurring`**: Events that repeat on a schedule
+| Event Type | Type-Specific Fields | Real-World Example |
+|------------|---------------------|-------------------|
+| `inPerson` | Standard venue-based event | Vancouver Food Festival |
+| `virtual` | `virtualDetails`: platform, meetingUrl, recordingAvailable, timezone | AI Workshop via Zoom |
+| `hybrid` | `hybridDetails`: virtualCapacity, inPersonCapacity, virtualMeetingUrl | Tech Conference with live stream |
+| `recurring` | `recurringDetails`: frequency, endRecurrence, exceptions | Monthly Book Club |
 
-**Implementation:**
-```javascript
-{
-  "eventType": "hybrid", // Discriminator field
-  "hybridDetails": {     // Type-specific attributes
-    "virtualCapacity": 300,
-    "inPersonCapacity": 200,
-    "virtualMeetingUrl": "https://teams.microsoft.com/j/321999401"
-  }
-}
-```
+**Why this pattern?**
+- **Schema flexibility**: New event types can be added without schema migrations
+- **Query efficiency**: All events live in one collection with shared indexes
+- **Application simplicity**: The polymorphic field drives conditional logic in the application
 
 #### Venue Polymorphism
-Venues support six distinct types with specialized attributes:
 
-- **`conferenceCenter`**: Meeting rooms, exhibition space, AV equipment
-- **`park`**: Outdoor spaces with activities and permit requirements
-- **`restaurant`**: Dining venues with menu and reservation details
-- **`virtualSpace`**: Online platforms with participant limits
-- **`stadium`**: Large venues with seating and event facilities
-- **`theater`**: Performance venues with stage and seating details
+| Venue Type | Type-Specific Fields | Example |
+|------------|---------------------|---------|
+| `conferenceCenter` | breakoutRooms, avEquipment, cateringAvailable | Vancouver Convention Centre |
+| `park` | outdoorSpace, parkingSpaces, restroomFacilities | Queen Elizabeth Park |
+| `restaurant` | Menu details, reservation info | Local restaurant for private events |
+| `virtualSpace` | platform, maxConcurrentUsers, recordingCapability | Zoom/Teams virtual venue |
+| `stadium` | Seating sections, event facilities | BC Place |
+| `theater` | Stage details, seating configuration | Queen Elizabeth Theatre |
+
+**Why this pattern?**
+- **Avoid sparse documents**: Without polymorphism, every venue would have nullable fields for all possible venue types (messy and unnecessary in MongoDB).
+- **Enable type-specific queries**: "Find conference centers with AV equipment" uses `venueType` + nested field queries
+- **Future extensibility**: Adding `coworkingSpace` or `warehouse` types requires no schema changes (just add a new type to the enum).
+
+---
 
 ### 2. Extended Reference Pattern
 
-The Extended Reference Pattern is implemented to improve query performance by denormalizing frequently accessed venue data directly into event documents.
+**What it is**: Frequently accessed data from a referenced document is copied (denormalized) into the referencing document to avoid joins ($lookup) on read-heavy operations.
 
-**Implementation:**
+**Why EventSphere uses it**: Event listings are the most common read operation. Users need to see venue name, city, and capacity without querying the venues collection.
+
+**Implementation in Events**:
 ```javascript
 {
-  "venueId": ObjectId("..."),
-  "venueReference": {          // Extended reference data
-    "name": "Convention Center",
-    "city": "San Francisco", 
-    "capacity": 5000,
+  "venueId": ObjectId("..."),        // Full reference for updates etc.
+  "venueReference": {                 // Extended reference for read optimization
+    "name": "Vancouver Convention Centre",
+    "city": "Vancouver",
+    "capacity": 2500,
     "venueType": "conferenceCenter"
   }
 }
 ```
 
-**Benefits:**
-- Eliminates joins for event listings with venue information
-- Enables venue-based filtering without additional database calls
-- Supports complex queries like "events at conference centers in Vancouver"
+**Trade-offs considered**:
+
+| Benefit | Cost |
+|---------|------|
+| Event listings load in single query | Venue updates require updating all linked events (less frequent than event updates) |
+| Enables venue-based filtering without $lookup | Data duplication (acceptable for read-heavy workload like this one) |
+| Reduces query complexity in application | Must maintain consistency on venue name/city changes (extra work for the application layer) |
+
+**Why this trade-off is acceptable**:
+- Venue names/cities change rarely (maybe once per year)
+- Event reads happen thousands of times per day
+- The denormalized fields are small (4 fields, ~100 bytes)
+- Application layer handles updates to both documents when venue details change
+
+**Queries enabled by this pattern**:
+- "Events at parks in Vancouver" - single collection query with `venueReference.venueType` and `venueReference.city`
+- "Events at conference centers with capacity > 500" - compound query on embedded fields
+
+---
 
 ### 3. Computed Pattern
 
-Pre-calculated statistics are stored to improve dashboard and analytics performance.
+**What it is**: Pre-calculated statistics are stored directly in documents to avoid expensive aggregation queries on every read.
 
-#### Event Computed Statistics
+**Why EventSphere uses it**: A dashboard or analytics page  for an Event organizer needs to show ticket sales, revenue, ratings, and attendance rates. Computing these on every page load would require aggregating across multiple collections.
+
+**Event Computed Statistics**:
 ```javascript
 "computedStats": {
   "totalTicketsSold": 125,
@@ -105,7 +172,7 @@ Pre-calculated statistics are stored to improve dashboard and analytics performa
 }
 ```
 
-#### Venue Computed Statistics
+**Venue Computed Statistics**:
 ```javascript
 "computedStats": {
   "totalEventsHosted": 156,
@@ -116,293 +183,204 @@ Pre-calculated statistics are stored to improve dashboard and analytics performa
 }
 ```
 
-### 4. Schema Versioning
+**Update strategy**:
+- `lastUpdated` field tracks when stats were last recalculated
+- Stats can be updated via scheduled background jobs or triggered on write operations (cron job or webhook)
+- For demo/academic purposes, stats are pre-computed during data generation
 
-All collections include a `schemaVersion` field to support future schema evolution:
+**Why this pattern?**
+- **Performance**: This would drop the load time of a dashboard or analytics page drastically.
+- **Scalability**: Aggregation cost is spread across writes, not multiplied across reads
+- **Single source of truth**: One place to look for event/venue metrics
 
-- **Current Version**: "1.0" for all collections
-- **Migration Support**: Version field enables gradual schema updates
-- **Backward Compatibility**: Legacy data remains accessible during transitions
+---
 
-### 5. Bridge Collection Pattern
+### 4. Bridge Collection Pattern (Checkins)
 
-The `checkins` collection serves as a bridge table creating a many-to-many relationship between users and events, optimized for analytics:
+**What it is**: A dedicated collection that represents a many-to-many relationship, storing the relationship itself along with relationship-specific attributes.
 
-**Benefits:**
-- Analytics flexibility for attendance patterns and user behavior
-- Optimized indexes for common analytics queries
-- Scalability without document size bloat
-- Centralized check-in logic with consistent validation
-- Optional link to Tickets collection via `ticketId` (for purchased tickets)
+**Why EventSphere uses it**: Users attend many events, events have many attendees. Embedding attendees in events would cause document bloat (1000+ attendee arrays). Embedding events in users has the same problem.
 
-### 6. Checkin-Ticket Relationship Pattern
+**Checkins as a Bridge Collection**:
 
-Checkins optionally reference tickets to avoid data duplication while supporting both paid and free events:
-
-**Pattern:**
-- **With Ticket**: `ticketId` links to Tickets collection (70% of checkins)
-- **Without Ticket**: `ticketId` is null (30% - free events, walk-ins, staff)
-- **Denormalization**: `ticketTier` kept in checkin for quick display (performance optimization)
-
-**Benefits:**
-- Eliminates duplication of ticket data (tier, price)
-- Maintains referential integrity
-- Supports ticket status updates ("active" → "used")
-- Enables queries: "All checkins for ticket X" or "Ticket used for checkin Y"
-
-## Collection Schemas
-
-### Events Collection
-
-**Purpose**: Core event catalog with polymorphic design for different event types.
-
-**Key Features**:
-- GeoJSON location data for geospatial queries
-- Polymorphic event types (inPerson, virtual, hybrid, recurring)
-- Extended reference pattern for venue data
-- Computed statistics for performance
-- Embedded ticket tiers and attendee snippets
-
-**Schema Validation**: Comprehensive JSON Schema with coordinate bounds validation, required fields enforcement, and polymorphic field validation.
-
-**Sample Document**:
-```javascript
-{
-  "_id": ObjectId("68ddb640c00b1dff057fbefc"),
-  "title": "Tech Innovation Summit 2025",
-  "description": "Experience cutting-edge technology and network with industry leaders.",
-  "category": "Technology",
-  "eventType": "hybrid",
-  "schemaVersion": "1.0",
-  "location": {
-    "type": "Point",
-    "coordinates": [-123.93446771957665, 49.10036536726016]
-  },
-  "venueReference": {
-    "name": "Vancouver Convention Centre",
-    "city": "Vancouver",
-    "capacity": 2500,
-    "venueType": "conferenceCenter"
-  },
-  "startDate": ISODate("2025-10-09T18:37:26.047Z"),
-  "endDate": ISODate("2025-10-09T22:37:26.047Z"),
-  "hybridDetails": {
-    "virtualCapacity": 300,
-    "inPersonCapacity": 200,
-    "virtualMeetingUrl": "https://teams.microsoft.com/j/321999401"
-  },
-  "computedStats": {
-    "totalTicketsSold": 125,
-    "totalRevenue": 16875,
-    "attendanceRate": 25.0,
-    "reviewCount": 8,
-    "averageRating": 4.3
-  }
-}
+```
+User ←──── Checkins ────→ Event
+              │
+              └──→ Venue (denormalized for analytics)
+              └──→ Ticket (optional reference/if it's a paid event)
 ```
 
-### Tickets Collection
+**Why not embed attendees in events?**
+- MongoDB documents have a 16MB limit
+- Large events (NFL games, concerts) could have 50,000+ attendees
+- Each attendee addition would rewrite the entire event document
+- Attendee queries ("what events has user X attended?") would require scanning all events
 
-**Purpose**: Individual user ticket purchases - separate collection for scalability.
+**Why not embed events in users?**
+- Active users might attend 100+ events per year
+- Each event attendance would grow the user document
+- User profile queries don't always need attendance history
 
-**Key Features**:
-- Separate collection from embedded EventTickets (ticket types)
-- Scales to millions of purchases for large events (NFL, concerts, online events)
-- Enables independent queries (user tickets, event sales analytics)
-- References both events and users collections
+**Benefits of bridge collection**:
+- **Unbounded scaling**: Millions of checkins without affecting event/user document sizes
+- **Relationship attributes**: `checkInTime`, `checkInMethod`, `ticketTier`, `qrCode` belong to the relationship, not the entities
+- **Flexible analytics**: Easy to answer "peak check-in times", "check-ins by method", "attendance patterns"
+- **Unique constraint**: Index on `{eventId: 1, userId: 1}` prevents duplicate check-ins
 
-**Architecture Decision - Dual Ticket Pattern**:
+---
 
-EventSphere implements a **dual ticket architecture** following MongoDB best practices:
+### 5. Dual Ticket Architecture
 
-1. **Embedded EventTickets** (in `events` collection):
-   - Ticket types/tiers available for purchase (e.g., "Early Bird", "General Admission", "VIP")
-   - Small, bounded set (typically 1-5 ticket types per event)
-   - Always displayed with event details
-   - Contains pricing, availability, and sold counts
-   - **Why embedded?** Small size, always accessed with events, improves query performance
+**What it is**: Two complementary data structures for tickets - embedded ticket types in events, and a separate collection for individual purchases.
 
-2. **Separate Tickets Collection** (user purchases):
-   - Individual ticket purchases by users
-   - Can grow to millions of documents (e.g., 100,000+ tickets for NFL events)
-   - Enables independent queries:
-     - "All tickets purchased by user X"
-     - "All tickets sold for event Y"
-     - "Revenue analytics by event/venue/category"
-   - **Why separate?** Prevents document bloat, enables efficient queries, supports scalability
+**Why EventSphere uses it**: Ticket types (tiers/pricing) are always displayed with events and are bounded (small number of types). Ticket purchases are unbounded and need independent queries so they are stored in a separate collection.
 
-**Sample Document**:
+**Embedded EventTickets (in events collection)**:
 ```javascript
-{
-  "_id": ObjectId("68ddb640c00b1dff057fbf00"),
-  "eventId": ObjectId("68ddb640c00b1dff057fbefc"),
-  "userId": ObjectId("68ddb640c00b1dff057fbe00"),
-  "pricePaid": 75.00,
-  "status": "active",
-  "ticketTier": "VIP",
-  "purchasedAt": ISODate("2025-10-01T14:30:00.000Z"),
-  "schemaVersion": "1.0",
-  "createdAt": ISODate("2025-10-01T14:30:00.000Z")
-}
+"tickets": [
+  { "tier": "Early Bird", "price": 35, "available": 500, "sold": 250 },
+  { "tier": "General Admission", "price": 45, "available": 1500, "sold": 800 },
+  { "tier": "VIP", "price": 150, "available": 50, "sold": 45 }
+]
 ```
 
-**Benefits of This Architecture**:
-- **Performance**: Event listings load quickly (embedded ticket types)
-- **Scalability**: Handles millions of purchases without bloating event documents
-- **Query Flexibility**: Independent queries for user tickets and sales analytics
-- **Industry Standard**: Matches patterns used by major ticketing platforms
-
-### Venues Collection
-
-**Purpose**: Venue catalog with polymorphic types and geospatial data.
-
-**Key Features**:
-- Polymorphic venue types with type-specific details
-- Complete address and contact information
-- Availability scheduling and pricing data
-- Computed performance statistics
-
-### Users Collection
-
-**Purpose**: User profiles with location-based preferences for event discovery.
-
-**Key Features**:
-- Geospatial preference location for nearby event discovery
-- Category preferences for personalized recommendations
-- Search radius configuration
-
-### Reviews Collection
-
-**Purpose**: Event and venue review system with rating aggregation.
-
-**Key Features**:
-- Supports both event and venue reviews
-- 1-5 star rating system
-- Comment system for detailed feedback
-
-### Checkins Collection
-
-**Purpose**: Bridge collection for user-event attendance with analytics support.
-
-**Key Features**:
-- Many-to-many relationship between users and events
-- Optional link to Tickets collection via `ticketId` (for purchased tickets)
-- QR code support for mobile check-ins
-- Location tracking for check-in verification
-- Device and method tracking for analytics
-
-**Checkin-Ticket Relationship**:
-
-Checkins can optionally reference tickets via `ticketId` field:
-
+**Separate Tickets Collection (user purchases)**:
 ```javascript
 {
   "eventId": ObjectId("..."),
   "userId": ObjectId("..."),
-  "ticketId": ObjectId("..."),  // Optional - links to purchased ticket
-  "ticketTier": "VIP",          // Denormalized for performance
-  "checkInTime": ISODate("..."),
-  "qrCode": "QR-554361"
+  "ticketTier": "VIP",
+  "pricePaid": 150.00,
+  "status": "active",
+  "purchasedAt": ISODate("...")
 }
 ```
 
-**Use Cases**:
-- **With Ticket**: Paid event check-ins link to ticket purchase (70% of checkins created in DB)
-- **Without Ticket**: Free events, walk-ins, staff, volunteers (30% of checkins created in DB)
+**Why this architecture?**
 
-**Benefits**:
-- Avoids data duplication (ticketTier, pricePaid from ticket)
-- Maintains referential integrity
-- Enables queries: "Which ticket was used for this checkin?"
-- Supports ticket status updates: Mark ticket as "used" when checked in for analytics and possible future fraud prevention or refunds
-- `ticketTier` kept as denormalized field for performance (quick display) for performance optimization
+| Aspect | Embedded (ticket types) | Separate (purchases) |
+|--------|------------------------|---------------------|
+| **Size** | Bounded (1-5 items) | Unbounded (millions) |
+| **Access pattern** | Always with event | Independent queries |
+| **Example query** | "Show event with pricing" | "User's purchased tickets" |
+| **Update frequency** | Rarely (pricing changes) | Frequently (each purchase) |
+
+**Industry precedent**: I read that Ticketmaster, Eventbrite, and StubHub use similar patterns - catalog data embedded, and transaction data separate.
+
+---
+
+### 6. Checkin-Ticket Relationship Pattern
+
+**What it is**: Checkins optionally reference tickets, supporting both paid and free event attendance while avoiding data duplication.
+
+**Why EventSphere uses it**: Not all check-ins require tickets. Free events, walk-ins, staff, and volunteers check in without purchasing.
+
+**Pattern implementation**:
+- **70% of checkins**: Have `ticketId` linking to purchased ticket
+- **30% of checkins**: `ticketId` is null (free events, walk-ins)
+- **Denormalized field**: `ticketTier` kept in checkin for quick display
+
+**Why denormalize ticketTier?**
+- Displaying check-in lists shouldn't require $lookup to tickets
+- Tier doesn't change after purchase (safe to denormalize)
+- Only one field duplicated (minimal storage cost)
+
+**Queries enabled**:
+- "Which ticket was used for this checkin?" - direct lookup via `ticketId`
+- "All checkins for this ticket" - query by `ticketId`
+- "Mark ticket as used on checkin" - update ticket status atomically
+
+---
+
+## Embedding vs. Referencing Decisions
+
+A critical NoSQL design choice is when to embed data vs. when to reference it. 
+
+How I made this decision for EventSphere:
+
+### Embedded (denormalized)
+
+| Data | Embedded In | Rationale |
+|------|-------------|-----------|
+| Ticket types | events.tickets | Bounded (1-5), always accessed with event, rarely changes |
+| Venue reference | events.venueReference | High read frequency, small size, enables filtering |
+| Address | venues.address | 1:1 relationship, always accessed together |
+| Contact info | venues.contact | 1:1 relationship, small size |
+| User preferences | users.profile.preferences | 1:1 relationship, user-specific |
+| Computed stats | events/venues | Avoids expensive aggregations |
+
+### Referenced (normalized)
+
+| Data | Stored In | Referenced By | Rationale |
+|------|-----------|---------------|-----------|
+| Ticket purchases | tickets | eventId, userId | Unbounded, needs independent queries |
+| Check-ins | checkins | eventId, userId, venueId | M:N relationship, relationship attributes |
+| Reviews | reviews | eventId OR venueId, userId | Unbounded per entity, independent queries |
+| Full venue data | venues | events.venueId | Updates should happen in one place |
+| User data | users | checkins.userId, reviews.userId | Single source of truth |
+
+---
 
 ## Indexing Strategy
 
-The full command for creating every index lives in `database/indexes/create_indexes.js`. This section captures the reasoning behind each group of indexes.
+Strategic indexes are directly influential on query performance. EventSphere uses **24 indexes** (4 per collection) designed for common query patterns.
 
-### Events Collection
-- **Geospatial (`location: "2dsphere"`):** guarantees $geoNear and proximity searches stay within 2dsphere requirements, which is fundamental for querying events around Nanaimo or any other location.
-- **Text compound index:** merges title, description, category, and tags so keyword searches sort by relevance without requiring application logic.
-- **Category + startDate:** mirrors the most likely common filter combo (“what’s happening in category X this weekend”), enabling efficient querying and pagination.
-- **eventType + startDate:** keeps polymorphic views fast (virtual vs. in-person vs. hybrid) since all templates filter by type plus an upcoming date window.
+**Full index definitions**: See [`create_indexes.js`](../database/indexes/create_indexes.js)
 
-### Venues Collection
-- **Geospatial:** supports “find venues near this coordinates” workflows used during event creation.
-- **venueType + capacity:** quickly returns suitable spaces when organizers filter by format (“conference center, ≥500 seats”).
-- **venueType + rating:** powers specific lists like “highest-rated parks” by combining quality and type without extra sorting.
-- **Single-field venueType:** serves as a fallback when only the type filter is set, ensuring predictable performance when capacity/rating filters are absent.
+### Index Design Rationale
 
-### Reviews Collection
-- **eventId:** main access path for displaying reviews inside event detail pages.
-- **venueId:** ensures venue display shows aggregated feedback without querying unrelated reviews.
-- **eventId + rating:** feeds rating statistics while maintaining the eventId path for quick access.
-- **userId:** supports user profile history (“what has this attendee reviewed?”).
+| Collection | Index | Query Pattern Supported |
+|------------|-------|------------------------|
+| events | `location: "2dsphere"` | Geospatial discovery ("events near me") |
+| events | `{title, description, category, tags}: "text"` | Full-text search with relevance |
+| events | `{category: 1, startDate: 1}` | "Technology events this weekend" |
+| events | `{eventType: 1, startDate: 1}` | "Virtual events next month" |
+| venues | `location: "2dsphere"` | Venue discovery for event creation |
+| venues | `{venueType: 1, capacity: 1}` | "Conference centers ≥500 capacity" |
+| checkins | `{eventId: 1, userId: 1}` (unique) | Prevent duplicate check-ins |
+| users | `email` (unique) | Authentication lookups |
 
-### Checkins Collection
-- **eventId + userId (unique):** enforces one check-in per attendee per event.
-- **eventId:** backs computed pattern attendance counters and.
-- **userId:** allows user-level attendance history.
-- **ticketId:** links a check-in back to the exact ticket purchase.
+### Index Trade-offs
 
-### Users Collection
-- **email (unique):** primary authentication key.
-- **createdAt:** enables inexpensive querying of app users over time.
-- **lastLogin:** highlighting active vs. inactive users.
-- **profile.preferences.location (2dsphere):** enables recommendations for users near based on their location.
+- **Write performance**: Each index adds a storage overhead to the database.
+- **Read performance**: Each index improves query performance.
 
-### Tickets Collection
-- **eventId + userId:** fastest path to answer “does this user already hold a ticket for this event”.
-- **userId:** backs “My Tickets” views for potential future profile pages.
-- **eventId:** feeds organizer-facing sales counts via computed pattern.
-- **status + purchasedAt:** allows chronological status dashboards for tickets.
+---
 
-Refer to the scripts in `database/indexes/create_indexes.js` whenever the actual index definitions change; update this narrative only when the intent behind an index evolves.
+## Data Validation
 
-## Query Patterns & Use Cases
+All collections enforce JSON Schema validation at the database level. Key validation rules:
 
-Executable examples live under `queries/` (basic CRUD, aggregations, and analysis). This document explains the rationale behind the queries and their use cases.
+| Validation Type | Example | Purpose |
+|-----------------|---------|---------|
+| Coordinate bounds | Longitude: -180 to 180 | Prevent invalid geospatial data |
+| Required fields | title, category, location for `events` | Data integrity |
+| Enum validation | eventType: ["inPerson", "virtual", "hybrid", "recurring"] | Type safety |
+| Range validation | rating: 1-5, price: ≥0 | Business rule enforcement |
+| Unique indexes | users.email, checkins.{eventId, userId} | Prevent duplicates |
 
-## Data Validation & Quality
+> **Full validation schemas**: See [`database/schemas/create_collections.js`](../database/schemas/create_collections.js)
 
-### JSON Schema Validation
+---
 
-All collections enforce comprehensive validation:
+## Schema Versioning
 
-- **Coordinate Bounds**: Longitude (-180 to 180), Latitude (-90 to 90)
-- **Required Fields**: Critical fields enforced at database level
-- **Data Types**: Strict type checking for all fields
-- **Range Validation**: Ratings (1-5), prices (≥0), capacities (≥0)
-- **Enum Validation**: Event types, venue types, status values
+All collections include a `schemaVersion` field to support future schema evolution:
 
-- **Duplicate Prevention**: Unique indexes on critical fields
+- **Current version**: "1.0" for all collections
+- **Migration strategy**: Application can handle multiple versions during transitions
+- **Backward compatibility**: Old documents remain readable while new fields are added
 
-## Future Enhancements
-
-### Phase 1: Advanced Features
-- Machine learning recommendation engine
-- Advanced analytics dashboard
-- Regular index usage monitoring
-
-### Phase 2: Enterprise Features
-- Multi-tenant architecture
-- Advanced reporting and BI! (maybe using Power BI)
-- API rate limiting and monitoring
-- Automated scaling and load balancing
-
-### Phase 3: AI Integration
-- Natural language event search
-- Automated event categorization (maybe using NLP)
-- Chatbot for event discovery
+---
 
 ## Conclusion
 
 The EventSphere database design demonstrates MongoDB expertise through:
 
-- **Advanced Design Patterns**: Polymorphic design, extended references, computed patterns
-- **Performance Optimization**: Strategic indexing for fast query responses and scalability
-- **Real-world Applicability**: Production-ready patterns used by industry leaders
-- **Scalability**: Horizontal scaling readiness with proper sharding strategies
-- **Features**: Geospatial queries, text search
+- **Strategic embedding**: Denormalizing for read performance where appropriate
+- **Reference patterns**: Normalizing for scalability and independent queries
+- **Polymorphic design**: Flexible schemas for diverse entity types
+- **Computed patterns**: Pre-calculated stats for dashboard performance
+- **Bridge collections**: Scalable many-to-many relationships with relationship attributes
 
-This design showcases understanding of NoSQL principles, MongoDB capabilities, and production-ready database architecture suitable for modern event management applications at scale.
+These patterns reflect a well thought out and applicable NoSQL design. Similar patterns are used by industry leaders like Airbnb (geospatial), and Eventbrite (event management).
