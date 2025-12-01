@@ -45,7 +45,7 @@ EventSphere is a MongoDB-based event management system demonstrating advanced No
 
 > **Design Documentation**: For ERD/CRD diagrams and design pattern explanations, see [`database_design.pdf`](../documentation/database_design.pdf).
 > 
-> **Query Scripts**: For executable MongoDB queries, see [`geospatial_aggregations.js`](../queries/aggregations/geospatial_aggregations.js), [`text_search_aggregations.js`](../queries/aggregations/text_search_aggregations.js), and [`date_range_aggregations.js`](../queries/aggregations/date_range_aggregations.js).
+> **Query Scripts**: For executable MongoDB queries, see [`geospatial_aggregations.js`](../queries/aggregations/geospatial_aggregations.js), [`text_search_aggregations.js`](../queries/aggregations/text_search_aggregations.js), and [`analytics_aggregations.js`](../queries/aggregations/analytics_aggregations.js).
 > 
 > **Schema Definitions**: For JSON Schema validation rules, see [`create_collections.js`](../database/schemas/create_collections.js)
 
