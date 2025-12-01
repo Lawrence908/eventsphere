@@ -21,8 +21,6 @@ EventSphere is a MongoDB-based event management system that demonstrates advance
 - **Text Search**: Multi-field text indexes with relevance scoring across event titles, descriptions, and tags
 - **Aggregation Pipelines**: Complex analytics including revenue tracking, attendance patterns, and venue performance metrics
 - **Schema Validation**: Comprehensive JSON Schema validation with polymorphic design patterns
-- **Transactions**: Multi-document ACID transactions for critical operations like ticket booking
-- **Change Streams**: Real-time updates via WebSocket integration
 
 ### Design Patterns
 - **Polymorphic Design**: Events and venues support multiple types with type-specific attributes
@@ -31,7 +29,7 @@ EventSphere is a MongoDB-based event management system that demonstrates advance
 - **Schema Versioning**: Future-proof design with version-aware document structure
 
 ### Performance Optimization
-- **Strategic Indexing**: 15+ indexes optimized for real-world query patterns
+- **Strategic Indexing**: 24 indexes optimized for real-world query patterns
 - **Compound Indexes**: Multi-field indexes for complex filtering scenarios
 - **Cursor-based Pagination**: Efficient pagination for large result sets
 - **Query Performance**: Sub-100ms response times for most operations
