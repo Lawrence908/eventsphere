@@ -19,6 +19,37 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/theme.css') }}">
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/eventsphere-logo.png') }}">
     
+    <!-- Hub footer styles (shared button back to main site) -->
+    <style>
+      .chrislawrence-footer {
+        background: #000;
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+        padding: 1.75rem 0;
+        margin-top: 2rem;
+      }
+
+      .chrislawrence-footer .hub-home-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.75rem;
+        padding-left: 1.75rem;
+        padding-right: 1.75rem;
+        border-radius: 999px;
+        text-decoration: none;
+      }
+
+      .chrislawrence-footer .hub-home-btn .hub-logo {
+        height: 40px;
+        width: 40px;
+        border-radius: 50%;
+        object-fit: cover;
+      }
+
+      .chrislawrence-footer .hub-home-text {
+        white-space: nowrap;
+      }
+    </style>
+    
     {% block head %}{% endblock %}
 </head>
 <body>
@@ -82,6 +113,22 @@
             </p>
             <p class="mb-0">&copy; Chris Lawrence - 2025 EventSphere. Built with Flask, MongoDB, and Leaflet.js</p>
         </div>
+    </footer>
+
+    <!-- Hub Footer: single card-like button linking back to main site -->
+    <footer class="chrislawrence-footer">
+      <div class="container text-center">
+        <a href="https://chrislawrence.ca"
+           class="btn btn-outline-accent btn-lg hub-home-btn"
+           aria-label="Visit main site chrislawrence.ca to view all projects">
+          <img
+            src="{{ url_for('static', filename='img/eventsphere-logo.png') }}"
+            alt="Chris Lawrence logo"
+            class="hub-logo d-none d-sm-inline-block"
+          >
+          <span class="hub-home-text">Visit main site: chrislawrence.ca</span>
+        </a>
+      </div>
     </footer>
 
     <!-- Bootstrap JS -->

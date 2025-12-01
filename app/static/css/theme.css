@@ -310,19 +310,58 @@ body {
 .hero-feature-card {
     display: flex;
     align-items: center;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(0, 237, 100, 0.2);
+    background: transparent;
+    border: none;
     border-radius: 12px;
     padding: 1rem;
-    transition: all 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     height: 100%;
+    cursor: default;
+    position: relative;
+    overflow: visible;
+}
+
+.hero-feature-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(ellipse at center, rgba(0, 237, 100, 0.08) 0%, transparent 70%);
+    border-radius: 12px;
+    opacity: 0;
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    z-index: -1;
+}
+
+.hero-feature-card::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: -2px;
+    right: -2px;
+    bottom: -2px;
+    background: linear-gradient(135deg, rgba(0, 237, 100, 0.1), rgba(0, 237, 100, 0.05));
+    border-radius: 14px;
+    opacity: 0;
+    transition: opacity 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none;
+    z-index: -2;
+    filter: blur(8px);
 }
 
 .hero-feature-card:hover {
-    background: rgba(0, 237, 100, 0.1);
-    border-color: var(--mdb-accent);
-    transform: translateY(-2px);
-    box-shadow: 0 8px 25px rgba(0, 237, 100, 0.2);
+    transform: translateY(-3px);
+}
+
+.hero-feature-card:hover::before {
+    opacity: 1;
+}
+
+.hero-feature-card:hover::after {
+    opacity: 1;
 }
 
 .hero-feature-icon {
