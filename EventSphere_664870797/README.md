@@ -1,11 +1,16 @@
-# EventSphere - MongoDB Event Management System
+# **Event***Sphere*: MongoDB Event Management System
+## README
 
 **Student ID:** 664 870 797  
 **Student Name:** Chris Lawrence  
 **Course:** CSCI 485 - Topics in Computer Science (MongoDB/NoSQL)  
-**Semester:** Fall 2025  
+**Section:** F25N01   
+**Instructor:** Dr. Kawal Jeet  
+**Submission Date:** November 30, 2025  
 
 ## Project Overview
+
+[EventSphere Demo Website](https://eventsphere.chrislawrence.ca/)
 
 EventSphere is a MongoDB-based event management system that demonstrates advanced NoSQL database concepts through real-world application design. The system enables users to discover, review, and attend in-person, virtual, and hybrid events with sophisticated geospatial discovery, full-text search, and advanced analytics capabilities.
 
