@@ -35,16 +35,19 @@ EventSphere is a MongoDB-based event management system that demonstrates advance
 
 ```
 EventSphere_664870797/
-├── README.md                    # This file - project overview and setup
-├── database/                    # Database implementation files
-│   ├── schemas/                 # Collection schemas and validation rules
+├── README.md                   # This file - project overview and setup
+├── database/                   # Database implementation files
+│   ├── schemas/                # Collection schemas and validation rules
 │   ├── sample_data/            # Sample data for testing and demonstration
 │   └── indexes/                # Index creation scripts
-├── queries/                     # Query examples and demonstrations
+├── queries/                    # Query examples and demonstrations
 │   ├── basic_CRUD/             # Create, Read, Update, Delete operations
 │   ├── aggregations/           # Complex aggregation pipelines
 │   └── analysis/               # Analytics and reporting queries
 ├── documentation/              # Project documentation
+│   ├── mongodb_crd.png         # MongoDB collection diagram
+│   ├── collection_diagram.svg  # Collection diagram
+│   ├── er_diagram.svg          # ER diagram
 │   ├── project_report.pdf      # Comprehensive project report
 │   └── database_design.pdf     # Database design documentation
 ├── presentation/               # Presentation materials
@@ -52,7 +55,6 @@ EventSphere_664870797/
 └── reflection/                 # Learning reflection
     └── learning_reflection.pdf # Personal learning outcomes
 ```
-
 ## Database Collections
 
 ### Core Collections
@@ -61,13 +63,14 @@ EventSphere_664870797/
 3. **users** - User profiles with preferences and location data
 4. **checkins** - Bridge collection for user-event attendance tracking
 5. **reviews** - Event and venue reviews with rating system
+6. **tickets** - User ticket purchases with ticket type and price
 
 ### Key Statistics
-- **1000+ realistic sample records** across all collections
-- **4+ relationship types** demonstrated (1:1, 1:many, many:many)
-- **25+ different queries** documented with performance analysis
-- **5+ strategic indexes** with geospatial and text search capabilities
-- **3+ complex aggregation pipelines** for analytics
+- **1,089,392** realistic sample records across all collections
+- **All relationship types** demonstrated (1:1, 1:many, many:many)
+- **30+ different queries** documented with performance analysis
+- **24+ strategic indexes** with geospatial and text search capabilities
+- **6+ complex aggregation pipelines** for analytics
 
 ## Technology Stack
 
@@ -79,16 +82,20 @@ EventSphere_664870797/
 
 ### Frontend
 - **HTML5/CSS3** - Modern responsive web interface
-- **JavaScript (ES6+)** - Interactive features with dynamic UI behaviors
-- **Socket.IO** - Real-time WebSocket communication
+- **JavaScript** - Interactive features with dynamic UI behaviors
 - **Leaflet.js** - Interactive maps for geospatial features
 
 ### Development Tools
-- **MongoDB Compass** - Database visualization and query testing
-- **Postman** - API testing and documentation
-- **Git** - Version control
+- **mongosh** - Database shell for querying and managing the database
+- **GitHub** - Version control
 
 ## Quick Start
+
+### Connection String
+The working connection string `MONGODB_URI` is stored in the `.env` file for your testing with mongosh. It does connect to my MongoDB Atlas account, and is live on my demo website, so please limit the queries to non-destructive operations.
+```
+MONGODB_URI=mongodb+srv://<username>:<password>@<cluster-address>/<database-name>?retryWrites=true&w=majority
+```
 
 ### Prerequisites
 - mongosh installed
