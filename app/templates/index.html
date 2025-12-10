@@ -14,6 +14,20 @@
                             Discover Events 
                             <span class="text-accent">Near You</span>
                         </h1>
+                        <!-- Post-it Note Badge -->
+                        <div class="post-it-note">
+                            <div class="post-it-content">
+                                <div class="post-it-icon">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path d="M17.193 9.555c-1.264-5.58-4.252-7.414-4.573-8.115-.28-.394-.53-.954-.735-1.44-.036.495-.055.685-.523 1.184-.723.566-1.514 1.12-2.126 2.11C7.691 4.537 6.104 7.867 5.517 13.18c-.705 6.375 1.15 9.092 2.053 10.045.75.8 1.895 1.15 2.687.944.943-.24 1.533-.9 2.153-1.485.617-.585 1.27-1.2 2.22-1.485 1.016-.31 1.655.015 2.126.495.47.48.705 1.2.495 1.965-.21.765-.75 1.485-1.2 2.085-.45.6-1.2 1.2-1.965 1.35-.765.15-1.8-.15-2.4-.75-.6-.6-1.05-1.5-1.35-2.4-.3-.9-.45-1.95-.3-2.85.15-.9.6-1.8 1.2-2.4.6-.6 1.35-1.05 2.25-1.2.9-.15 1.95 0 2.85.3.9.3 1.8.75 2.4 1.35.6.6.9 1.635.75 2.4-.15.765-.75 1.515-1.35 1.965-.6.45-1.2.705-1.965.495-.765-.21-1.485-.75-1.965-1.2-.48-.45-.495-1.11-.495-2.126.015-1.016.24-1.533.945-2.153.705-.617 1.2-1.27 1.485-2.22.31-1.016.015-1.655-.495-2.126-.48-.47-1.2-.705-1.965-.495z" fill="#00ED64"/>
+                                    </svg>
+                                </div>
+                                <div class="post-it-text">
+                                    <strong>{{ total_documents|format_number }} Documents</strong>
+                                    <small>Powered by MongoDB</small>
+                                </div>
+                            </div>
+                        </div>
                         <p class="lead mb-4">
                             EventSphere uses MongoDB's powerful geospatial capabilities and Leaflet.js 
                             to help you find amazing events happening around you. Built with Flask and 
@@ -21,7 +35,7 @@
                         </p>
                         <div class="hero-features mb-4">
                             <div class="row g-3">
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <div class="hero-feature-card">
                                         <div class="hero-feature-icon">
                                             <i class="bi bi-geo-alt-fill"></i>
@@ -32,7 +46,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <div class="hero-feature-card">
                                         <div class="hero-feature-icon">
                                             <i class="bi bi-database"></i>
@@ -43,7 +57,7 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <div class="hero-feature-card">
                                         <div class="hero-feature-icon">
                                             <i class="bi bi-map"></i>
@@ -51,17 +65,6 @@
                                         <div class="hero-feature-content">
                                             <h6 class="mb-1">Interactive Maps</h6>
                                             <small class="text-muted">Leaflet.js powered</small>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="hero-feature-card">
-                                        <div class="hero-feature-icon">
-                                            <i class="bi bi-lightning-charge"></i>
-                                        </div>
-                                        <div class="hero-feature-content">
-                                            <h6 class="mb-1">Real-time Updates</h6>
-                                            <small class="text-muted">Live event data</small>
                                         </div>
                                     </div>
                                 </div>
@@ -130,7 +133,7 @@
                 </div>
             </div>
             <div class="row g-4">
-                <div class="col-md-3 col-sm-6">
+                <div class="col-md-4 col-sm-6">
                     <div class="tech-card">
                         <div class="tech-icon">
                             <i class="bi bi-database"></i>
@@ -139,7 +142,7 @@
                         <p class="small text-muted">Geospatial queries & indexing</p>
                     </div>
                 </div>
-                <div class="col-md-3 col-sm-6">
+                <div class="col-md-4 col-sm-6">
                     <div class="tech-card">
                         <div class="tech-icon">
                             <i class="bi bi-gear"></i>
@@ -148,22 +151,13 @@
                         <p class="small text-muted">Python web framework</p>
                     </div>
                 </div>
-                <div class="col-md-3 col-sm-6">
+                <div class="col-md-4 col-sm-6">
                     <div class="tech-card">
                         <div class="tech-icon">
                             <i class="bi bi-map"></i>
                         </div>
                         <h6>Leaflet.js</h6>
                         <p class="small text-muted">Interactive mapping</p>
-                    </div>
-                </div>
-                <div class="col-md-3 col-sm-6">
-                    <div class="tech-card">
-                        <div class="tech-icon">
-                            <i class="bi bi-lightning-charge"></i>
-                        </div>
-                        <h6>Socket.IO</h6>
-                        <p class="small text-muted">Real-time features</p>
                     </div>
                 </div>
             </div>

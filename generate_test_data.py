@@ -1,12 +1,19 @@
 #!/usr/bin/env python3
 """
 Test Data Generator for EventSphere
-Generates comprehensive test data including events, venues, users, checkins, and reviews
+Generates comprehensive test data including events, venues, users, checkins, reviews, and tickets
 Supports both JSON export and direct MongoDB seeding
+
+Ticket Architecture:
+- Embedded EventTickets: Ticket types/tiers (Early Bird, VIP, etc.) embedded in events collection
+- Separate Tickets Collection: Individual user purchases (can scale to millions)
 
 Usage:
 python generate_test_data.py --seed-db --clear-db
-python generate_test_data.py --seed-db --clear-db --events 10000 --venues 500 --users 2000 --tickets 5000 # this will generate all the data and seed the database
+# Recommended for 512MB MongoDB Atlas quota (targets ~1M total records):
+python generate_test_data.py --seed-db --clear-db --events 150000 --venues 30000 --users 60000 --tickets 550000 --batch-size 20000
+# For larger quotas, you can scale up proportionally:
+python generate_test_data.py --seed-db --clear-db --events 1000000 --venues 100000 --users 100000 --tickets 2000000 --batch-size 20000
 python generate_test_data.py --json-only # this will generate all the data and save it to json files
 
 """
@@ -15,6 +22,7 @@ import random
 import json
 import os
 import sys
+import time
 from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Any, Optional
 import math
@@ -594,8 +602,18 @@ def generate_users(count: int = 2000) -> List[Dict[str, Any]]:
     
     return users
 
-def generate_checkin(userId: str, eventId: str, event_start: datetime, event_end: datetime, event_location: Dict[str, Any] = None) -> Dict[str, Any]:
-    """Generate a single check-in with realistic data"""
+def generate_checkin(userId: str, eventId: str, event_start: datetime, event_end: datetime, event_location: Dict[str, Any] = None, ticketId: str = None, ticketTier: str = None) -> Dict[str, Any]:
+    """Generate a single check-in with realistic data
+    
+    Args:
+        userId: User ID for the checkin
+        eventId: Event ID for the checkin
+        event_start: Event start time
+        event_end: Event end time
+        event_location: Event location (optional)
+        ticketId: Optional ticket ID if checkin is for a purchased ticket
+        ticketTier: Optional ticket tier (used if ticketId provided, or for free events)
+    """
     # Check-in time is typically around event start time
     checkInTime = event_start + timedelta(minutes=random.randint(-30, 60))
     
@@ -622,14 +640,25 @@ def generate_checkin(userId: str, eventId: str, event_start: datetime, event_end
         checkin_lng = random.uniform(-180, 180)
         checkin_lat = random.uniform(-90, 90)
     
+    # Determine ticket tier: use provided tier, or generate one if no ticket
+    if ticketTier:
+        final_ticket_tier = ticketTier
+    elif ticketId:
+        # If ticketId exists but no tier provided, we'll look it up or use a default
+        final_ticket_tier = random.choice(["General Admission", "VIP", "Early Bird"])
+    else:
+        # No ticket - could be free event, walk-in, or staff
+        final_ticket_tier = random.choice(["General Admission", "VIP", "Early Bird"]) if random.random() < 0.5 else None
+    
     checkin = {
         "eventId": ObjectId(eventId),
         "userId": ObjectId(userId),
         "venueId": ObjectId(),  # Placeholder - would need actual venueId
+        "ticketId": ObjectId(ticketId) if ticketId else None,  # Link to ticket if exists
         "checkInTime": checkInTime,
         "qrCode": f"QR-{random.randint(100000, 999999)}",
         "schemaVersion": "1.0",  # Schema versioning
-        "ticketTier": random.choice(["General Admission", "VIP", "Early Bird"]) if random.random() < 0.7 else None,
+        "ticketTier": final_ticket_tier,  # Denormalized for performance, or for checkins without tickets
         "checkInMethod": random.choice(["qrCode", "manual", "mobile_app"]),
         "location": {
             "type": "Point",
@@ -646,10 +675,26 @@ def generate_checkin(userId: str, eventId: str, event_start: datetime, event_end
     
     return checkin
 
-def generate_checkins(users: List[Dict[str, Any]], events: List[Dict[str, Any]], checkins_per_user: float = 2.5) -> List[Dict[str, Any]]:
-    """Generate check-ins for users and events"""
+def generate_checkins(users: List[Dict[str, Any]], events: List[Dict[str, Any]], tickets: List[Dict[str, Any]] = None, checkins_per_user: float = 2.5) -> List[Dict[str, Any]]:
+    """Generate check-ins for users and events, optionally linking to tickets
+    
+    Args:
+        users: List of user documents
+        events: List of event documents
+        tickets: Optional list of ticket documents to link checkins to
+        checkins_per_user: Average number of checkins per user
+    """
     print(f"Generating check-ins for {len(users)} users and {len(events)} events...")
     checkins = []
+    
+    # Create a lookup: (eventId, userId) -> ticket
+    ticket_lookup = {}
+    if tickets:
+        for ticket in tickets:
+            key = (str(ticket["eventId"]), str(ticket["userId"]))
+            # Use first matching ticket (user might have multiple tickets for same event)
+            if key not in ticket_lookup:
+                ticket_lookup[key] = ticket
     
     for i, user in enumerate(users):
         if (i + 1) % 200 == 0:
@@ -662,12 +707,22 @@ def generate_checkins(users: List[Dict[str, Any]], events: List[Dict[str, Any]],
         user_events = random.sample(events, min(num_checkins, len(events)))
         
         for event in user_events:
+            # Try to find a matching ticket for this user+event
+            ticket_key = (str(event["_id"]), str(user["_id"]))
+            matching_ticket = ticket_lookup.get(ticket_key)
+            
+            # 70% chance checkin is for a purchased ticket (if ticket exists)
+            # 30% chance it's a walk-in/free event checkin
+            use_ticket = matching_ticket and random.random() < 0.7
+            
             checkin = generate_checkin(
                 user["_id"],  # Use actual user _id
                 event["_id"],  # Use actual event _id
                 event["startDate"],
                 event["endDate"],
-                event.get("location")  # Pass event location
+                event.get("location"),  # Pass event location
+                ticketId=str(matching_ticket["_id"]) if use_ticket else None,
+                ticketTier=matching_ticket.get("ticketTier") if use_ticket else None
             )
             # Add _id for MongoDB compatibility
             checkin["_id"] = ObjectId()
@@ -919,7 +974,8 @@ def generate_reviews(events: List[Dict[str, Any]], users: List[Dict[str, Any]], 
             print(f"Generated reviews for {i + 1} events...")
         
         # Number of reviews per event (some events have no reviews, some have many)
-        num_reviews = poisson_approximation(reviews_per_event * 10)  # Poisson distribution
+        # Using Poisson distribution - removed *10 multiplier that was causing too many reviews
+        num_reviews = poisson_approximation(reviews_per_event)
         
         for _ in range(num_reviews):
             user = random.choice(users)
@@ -1070,7 +1126,12 @@ def save_checkins_to_json(checkins: List[Dict[str, Any]], filename: str = "test_
     print(f"Saved to {filename}")
 
 def generate_event_tickets(event: Dict[str, Any]) -> List[Dict[str, Any]]:
-    """Generate embedded EventTickets (ticket types available for the event)"""
+    """Generate embedded EventTickets (ticket types/tiers available for the event)
+    
+    These are EMBEDDED in the events collection and represent ticket types/tiers
+    (e.g., "Early Bird", "General Admission", "VIP") with pricing and availability.
+    This is separate from the Tickets collection which stores individual user purchases.
+    """
     # Most events have 1-3 ticket tiers
     num_tiers = random.choices([1, 2, 3], weights=[50, 35, 15])[0]
     tickets = []
@@ -1113,7 +1174,14 @@ def generate_event_tickets(event: Dict[str, Any]) -> List[Dict[str, Any]]:
     return tickets
 
 def generate_user_tickets(events: List[Dict[str, Any]], users: List[Dict[str, Any]], ticket_count: int = 5000) -> List[Dict[str, Any]]:
-    """Generate separate Ticket collection (actual user purchases)"""
+    """Generate separate Tickets collection (actual user purchases)
+    
+    This is a SEPARATE collection from embedded EventTickets in events.
+    - Embedded EventTickets: Ticket types/tiers available (small, bounded, always with event)
+    - Separate Tickets: Individual user purchases (can grow to millions, needs independent queries)
+    
+    Best Practice: Both patterns are needed for scalability.
+    """
     print(f"Generating {ticket_count} user ticket purchases...")
     tickets = []
     
@@ -1166,15 +1234,70 @@ def save_tickets_to_json(tickets: List[Dict[str, Any]], filename: str = "test_ti
     
     print(f"Saved to {filename}")
 
-def seed_database(venues, users, events, tickets, checkins, reviews, clear_existing: bool = True):
-    """Seed MongoDB database with provided data"""
+def insert_in_batches(collection, documents, batch_size: int = 20000, collection_name: str = "documents", max_retries: int = 3):
+    """Insert documents in batches with retry logic
+    
+    Args:
+        collection: MongoDB collection object
+        documents: List of documents to insert
+        batch_size: Number of documents per batch
+        collection_name: Name of collection for logging
+        max_retries: Maximum number of retry attempts per batch
+    """
+    total = len(documents)
+    inserted = 0
+    
+    for i in range(0, total, batch_size):
+        batch = documents[i:i + batch_size]
+        batch_num = (i // batch_size) + 1
+        total_batches = (total + batch_size - 1) // batch_size
+        
+        for attempt in range(max_retries):
+            try:
+                result = collection.insert_many(batch, ordered=False)  # ordered=False allows partial success
+                inserted += len(result.inserted_ids)
+                print(f"  Batch {batch_num}/{total_batches}: Inserted {len(result.inserted_ids)} {collection_name} (Total: {inserted}/{total})")
+                break  # Success, move to next batch
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    wait_time = (attempt + 1) * 2  # Exponential backoff: 2s, 4s, 6s
+                    print(f"  Batch {batch_num}/{total_batches}: Retry {attempt + 1}/{max_retries} after {wait_time}s... (Error: {str(e)[:100]})")
+                    time.sleep(wait_time)
+                else:
+                    print(f"  ❌ Batch {batch_num}/{total_batches}: Failed after {max_retries} attempts: {e}")
+                    raise
+    
+    return inserted
+
+def seed_database(venues, users, events, tickets, checkins, reviews, clear_existing: bool = True, batch_size: int = 20000):
+    """Seed MongoDB database with provided data using batched inserts
+    
+    Args:
+        venues: List of venue documents
+        users: List of user documents
+        events: List of event documents
+        tickets: List of ticket documents
+        checkins: List of checkin documents
+        reviews: List of review documents
+        clear_existing: Whether to clear existing data first
+        batch_size: Number of documents to insert per batch (default: 20000)
+    """
     if not MONGODB_AVAILABLE:
         print("Error: MongoDB integration not available. Cannot seed database.")
         return False
     
     try:
         print(f"Seeding database: {Config.DB_NAME}")
-        client = MongoClient(Config.MONGODB_URI)
+        # Configure MongoDB client with better timeout settings for large operations
+        client = MongoClient(
+            Config.MONGODB_URI,
+            serverSelectionTimeoutMS=30000,  # 30 seconds
+            connectTimeoutMS=30000,
+            socketTimeoutMS=600000,  # 10 minutes for large operations (events with embedded data can take longer)
+            maxPoolSize=50,
+            retryWrites=True,
+            retryReads=True
+        )
         print(f"Using connection: {Config.MONGODB_URI}")
         db = client[Config.DB_NAME]
         
@@ -1190,57 +1313,75 @@ def seed_database(venues, users, events, tickets, checkins, reviews, clear_exist
             db.tickets.drop()
             print("✓ Existing data cleared")
         
-        # Insert data into MongoDB
-        print("\nInserting data into MongoDB...")
+        # Insert data into MongoDB - one collection at a time
+        print("\nInserting data into MongoDB (batched)...")
+        print(f"Batch size: {batch_size} documents per batch\n")
         
-        try:
-            print("Inserting venues...")
-            result = db.venues.insert_many(venues)
-            print(f"✓ Inserted {len(result.inserted_ids)} venues")
-        except Exception as e:
-            print(f"❌ Failed to insert venues: {e}")
-            raise
+        # 1. Insert venues first (no dependencies)
+        if venues:
+            print(f"1. Inserting {len(venues)} venues...")
+            try:
+                inserted = insert_in_batches(db.venues, venues, batch_size, "venues")
+                print(f"✓ Successfully inserted {inserted}/{len(venues)} venues\n")
+            except Exception as e:
+                print(f"❌ Failed to insert venues: {e}")
+                raise
         
-        try:
-            print("Inserting users...")
-            result = db.users.insert_many(users)
-            print(f"✓ Inserted {len(result.inserted_ids)} users")
-        except Exception as e:
-            print(f"❌ Failed to insert users: {e}")
-            raise
+        # 2. Insert users (no dependencies)
+        if users:
+            print(f"2. Inserting {len(users)} users...")
+            try:
+                inserted = insert_in_batches(db.users, users, batch_size, "users")
+                print(f"✓ Successfully inserted {inserted}/{len(users)} users\n")
+            except Exception as e:
+                print(f"❌ Failed to insert users: {e}")
+                raise
         
-        try:
-            print("Inserting events...")
-            result = db.events.insert_many(events)
-            print(f"✓ Inserted {len(result.inserted_ids)} events")
-        except Exception as e:
-            print(f"❌ Failed to insert events: {e}")
-            print("This might be due to validation errors. Check your event schema.")
-            raise
+        # 3. Insert events (depends on venues - references will work since venues are already inserted)
+        # Use smaller batch size for events since they contain embedded ticket tiers (larger documents)
+        if events:
+            print(f"3. Inserting {len(events)} events...")
+            # Events are larger due to embedded tickets, so use smaller batches to avoid timeouts
+            events_batch_size = min(batch_size, 10000)  # Cap at 10K for events
+            if events_batch_size < batch_size:
+                print(f"  Using smaller batch size for events: {events_batch_size} (events are larger documents)")
+            try:
+                inserted = insert_in_batches(db.events, events, events_batch_size, "events")
+                print(f"✓ Successfully inserted {inserted}/{len(events)} events\n")
+            except Exception as e:
+                print(f"❌ Failed to insert events: {e}")
+                print("This might be due to validation errors. Check your event schema.")
+                raise
         
-        try:
-            print("Inserting user tickets...")
-            result = db.tickets.insert_many(tickets)
-            print(f"✓ Inserted {len(result.inserted_ids)} user tickets")
-        except Exception as e:
-            print(f"❌ Failed to insert user tickets: {e}")
-            raise
+        # 4. Insert user tickets (depends on events and users)
+        if tickets:
+            print(f"4. Inserting {len(tickets)} user tickets...")
+            try:
+                inserted = insert_in_batches(db.tickets, tickets, batch_size, "tickets")
+                print(f"✓ Successfully inserted {inserted}/{len(tickets)} user tickets\n")
+            except Exception as e:
+                print(f"❌ Failed to insert user tickets: {e}")
+                raise
         
-        try:
-            print("Inserting checkins...")
-            result = db.checkins.insert_many(checkins)
-            print(f"✓ Inserted {len(result.inserted_ids)} checkins")
-        except Exception as e:
-            print(f"❌ Failed to insert checkins: {e}")
-            raise
+        # 5. Insert checkins (depends on events and users)
+        if checkins:
+            print(f"5. Inserting {len(checkins)} checkins...")
+            try:
+                inserted = insert_in_batches(db.checkins, checkins, batch_size, "checkins")
+                print(f"✓ Successfully inserted {inserted}/{len(checkins)} checkins\n")
+            except Exception as e:
+                print(f"❌ Failed to insert checkins: {e}")
+                raise
         
-        try:
-            print("Inserting reviews...")
-            result = db.reviews.insert_many(reviews)
-            print(f"✓ Inserted {len(result.inserted_ids)} reviews")
-        except Exception as e:
-            print(f"❌ Failed to insert reviews: {e}")
-            raise
+        # 6. Insert reviews (depends on events and users)
+        if reviews:
+            print(f"6. Inserting {len(reviews)} reviews...")
+            try:
+                inserted = insert_in_batches(db.reviews, reviews, batch_size, "reviews")
+                print(f"✓ Successfully inserted {inserted}/{len(reviews)} reviews\n")
+            except Exception as e:
+                print(f"❌ Failed to insert reviews: {e}")
+                raise
         
         print("\n✅ Database seeded successfully!")
         
@@ -1265,10 +1406,11 @@ def main():
     parser.add_argument('--seed-db', action='store_true', help='Seed MongoDB database directly')
     parser.add_argument('--json-only', action='store_true', help='Generate JSON files only (default)')
     parser.add_argument('--clear-db', action='store_true', default=True, help='Clear existing database data before seeding')
-    parser.add_argument('--venues', type=int, default=500, help='Number of venues to generate')
-    parser.add_argument('--users', type=int, default=2000, help='Number of users to generate')
-    parser.add_argument('--events', type=int, default=10000, help='Number of events to generate')
-    parser.add_argument('--tickets', type=int, default=5000, help='Number of user ticket purchases to generate')
+    parser.add_argument('--venues', type=int, default=30000, help='Number of venues to generate')
+    parser.add_argument('--users', type=int, default=60000, help='Number of users to generate')
+    parser.add_argument('--events', type=int, default=150000, help='Number of events to generate')
+    parser.add_argument('--tickets', type=int, default=550000, help='Number of user ticket purchases to generate')
+    parser.add_argument('--batch-size', type=int, default=20000, help='Number of documents to insert per batch (default: 10000)')
     
     args = parser.parse_args()
     
@@ -1289,7 +1431,7 @@ def main():
     tickets = generate_user_tickets(events, users, args.tickets)
     
     print("\n5. Generating Reviews...")
-    reviews = generate_reviews(events, users, reviews_per_event=0.4)
+    reviews = generate_reviews(events, users, reviews_per_event=1.0)  # ~1 review per event (similar scale to checkins)
     
     print("\n6. Generating Check-ins...")
     checkins = generate_checkins(users, events, checkins_per_user=2.5)
@@ -1297,7 +1439,7 @@ def main():
     # Handle output based on arguments
     if args.seed_db and MONGODB_AVAILABLE:
         print("\n7. Seeding MongoDB Database...")
-        success = seed_database(venues, users, events, tickets, checkins, reviews, clear_existing=args.clear_db)
+        success = seed_database(venues, users, events, tickets, checkins, reviews, clear_existing=args.clear_db, batch_size=args.batch_size)
         if success:
             print("✅ Database seeding completed successfully!")
         else:

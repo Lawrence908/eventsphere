@@ -1,17 +1,10 @@
+// EventSphere
 // Basic CRUD Operations for Users, Reviews, and Checkins Collections
 // Student ID: 664 870 797 - Chris Lawrence
 // CSCI 485 - Fall 2025
 
-print("=".repeat(60));
-print("USERS, REVIEWS & CHECKINS - CRUD OPERATIONS");
-print("=".repeat(60));
-
 // ===== USERS COLLECTION CRUD =====
-print("\n1. USERS COLLECTION - CRUD OPERATIONS");
-print("-".repeat(40));
 
-// CREATE - Add new users
-print("Creating new users...");
 db.users.insertMany([
     {
         email: "alex.thompson@gmail.com",
@@ -23,7 +16,7 @@ db.users.insertMany([
                 categories: ["Technology", "Business", "Networking"],
                 location: {
                     type: "Point",
-                    coordinates: [-123.1207, 49.2827] // Vancouver
+                    coordinates: [-123.1207, 49.2827]
                 },
                 radiusKm: 30
             }
@@ -42,7 +35,7 @@ db.users.insertMany([
                 categories: ["Arts & Culture", "Music", "Food & Drink"],
                 location: {
                     type: "Point",
-                    coordinates: [-123.9351, 49.0831] // Nanaimo
+                    coordinates: [-123.9351, 49.0831]
                 },
                 radiusKm: 50
             }
@@ -53,22 +46,12 @@ db.users.insertMany([
     }
 ]);
 
-// READ - Find users
-print("\nFinding users by preferences:");
+// Find users by category preference
 db.users.find({ "profile.preferences.categories": "Technology" }).forEach(user => {
-    print(`- ${user.profile.firstName} ${user.profile.lastName} (${user.email})`);
+    print(`${user.profile.firstName} ${user.profile.lastName} - ${user.email}`);
 });
 
-print("\nFinding users in Vancouver area:");
-db.users.find({
-    "profile.preferences.location.coordinates.0": { $gte: -123.3, $lte: -123.0 },
-    "profile.preferences.location.coordinates.1": { $gte: 49.2, $lte: 49.3 }
-}).forEach(user => {
-    print(`- ${user.profile.firstName} ${user.profile.lastName} - Radius: ${user.profile.preferences.radiusKm}km`);
-});
-
-// UPDATE - Update user preferences
-print("\nUpdating user preferences...");
+// Update user preferences
 db.users.updateOne(
     { email: "alex.thompson@gmail.com" },
     {
@@ -80,15 +63,14 @@ db.users.updateOne(
     }
 );
 
-// UPDATE - Update user location
-print("Updating user location...");
+// Update user location
 db.users.updateOne(
     { email: "maria.garcia@outlook.com" },
     {
         $set: {
             "profile.preferences.location": {
                 type: "Point",
-                coordinates: [-123.1207, 49.2827] // Moved to Vancouver
+                coordinates: [-123.1207, 49.2827]
             },
             "profile.preferences.radiusKm": 25,
             updatedAt: new Date()
@@ -97,32 +79,27 @@ db.users.updateOne(
 );
 
 // ===== REVIEWS COLLECTION CRUD =====
-print("\n2. REVIEWS COLLECTION - CRUD OPERATIONS");
-print("-".repeat(40));
 
-// First, get some event and user IDs for reviews
 const sampleEvent = db.events.findOne({ title: { $regex: /Tech/ } });
 const sampleVenue = db.venues.findOne({ venueType: "conferenceCenter" });
 const sampleUser = db.users.findOne({ email: "alex.thompson@gmail.com" });
 
 if (sampleEvent && sampleUser) {
-    // CREATE - Add event reviews
-    print("Creating event reviews...");
     db.reviews.insertMany([
         {
             eventId: sampleEvent._id,
             userId: sampleUser._id,
             rating: 5,
-            comment: "Excellent tech summit! Great speakers and valuable networking opportunities. The hybrid format worked seamlessly.",
+            comment: "Excellent tech summit! Great speakers and valuable networking opportunities.",
             schemaVersion: "1.0",
             createdAt: new Date(),
             updatedAt: null
         },
         {
             eventId: sampleEvent._id,
-            userId: ObjectId(), // Different user
+            userId: ObjectId(),
             rating: 4,
-            comment: "Good content and organization. The virtual component could use some improvement, but overall worth attending.",
+            comment: "Good content and organization. The virtual component could use some improvement.",
             schemaVersion: "1.0",
             createdAt: new Date(),
             updatedAt: null
@@ -131,37 +108,31 @@ if (sampleEvent && sampleUser) {
 }
 
 if (sampleVenue && sampleUser) {
-    // CREATE - Add venue review
-    print("Creating venue review...");
     db.reviews.insertOne({
         venueId: sampleVenue._id,
         userId: sampleUser._id,
         rating: 4,
-        comment: "Professional venue with excellent facilities. Great location and helpful staff. Parking could be better.",
+        comment: "Professional venue with excellent facilities. Great location and helpful staff.",
         schemaVersion: "1.0",
         createdAt: new Date(),
         updatedAt: null
     });
 }
 
-// READ - Find reviews by rating
-print("\nFinding 5-star reviews:");
+// Find reviews by rating
 db.reviews.find({ rating: 5 }).forEach(review => {
     const type = review.eventId ? "Event" : "Venue";
-    print(`- ${type} Review: ${review.rating} stars - "${review.comment.substring(0, 50)}..."`);
+    print(`${type} Review: ${review.rating} stars`);
 });
 
-// READ - Find reviews by user
+// Find reviews by user
 if (sampleUser) {
-    print(`\nFinding reviews by ${sampleUser.profile.firstName}:`);
     db.reviews.find({ userId: sampleUser._id }).forEach(review => {
-        const type = review.eventId ? "Event" : "Venue";
-        print(`- ${type} Review: ${review.rating} stars - ${review.createdAt.toISOString().split('T')[0]}`);
+        print(`Rating: ${review.rating} - ${review.createdAt.toISOString().split('T')[0]}`);
     });
 }
 
-// UPDATE - Update review
-print("\nUpdating a review...");
+// Update review
 db.reviews.updateOne(
     { rating: 4, comment: { $regex: /Good content/ } },
     {
@@ -172,27 +143,21 @@ db.reviews.updateOne(
     }
 );
 
-// READ - Aggregate reviews by rating
-print("\nReview rating distribution:");
+// Review rating distribution
 db.reviews.aggregate([
     { $group: { _id: "$rating", count: { $sum: 1 } } },
     { $sort: { _id: 1 } }
 ]).forEach(result => {
-    print(`- ${result._id} stars: ${result.count} reviews`);
+    print(`${result._id} stars: ${result.count} reviews`);
 });
 
 // ===== CHECKINS COLLECTION CRUD =====
-print("\n3. CHECKINS COLLECTION - CRUD OPERATIONS");
-print("-".repeat(40));
 
-// Get sample data for checkins
 const sampleEvent2 = db.events.findOne({ eventType: "hybrid" });
 const sampleVenue2 = db.venues.findOne({ venueType: "park" });
 const sampleUser2 = db.users.findOne({ email: "maria.garcia@outlook.com" });
 
 if (sampleEvent2 && sampleVenue2 && sampleUser2) {
-    // CREATE - Add checkins
-    print("Creating check-ins...");
     db.checkins.insertMany([
         {
             eventId: sampleEvent2._id,
@@ -239,30 +204,19 @@ if (sampleEvent2 && sampleVenue2 && sampleUser2) {
     ]);
 }
 
-// READ - Find checkins by event
+// Find checkins by event
 if (sampleEvent2) {
-    print(`\nFinding check-ins for event:`);
     db.checkins.find({ eventId: sampleEvent2._id }).forEach(checkin => {
-        print(`- User checked in at ${checkin.checkInTime.toISOString()} via ${checkin.checkInMethod}`);
+        print(`Check-in: ${checkin.checkInTime.toISOString()} - ${checkin.checkInMethod}`);
     });
 }
 
-// READ - Find checkins by method
-print("\nFinding QR code check-ins:");
+// Find checkins by method
 db.checkins.find({ checkInMethod: "qrCode" }).forEach(checkin => {
-    print(`- QR Code: ${checkin.qrCode} - ${checkin.checkInTime.toISOString()}`);
+    print(`QR Code: ${checkin.qrCode} - ${checkin.checkInTime.toISOString()}`);
 });
 
-// READ - Find checkins by user
-if (sampleUser) {
-    print(`\nFinding check-ins by user:`);
-    db.checkins.find({ userId: sampleUser._id }).forEach(checkin => {
-        print(`- Checked in: ${checkin.checkInTime.toISOString()} - Tier: ${checkin.ticketTier}`);
-    });
-}
-
-// UPDATE - Update checkin metadata
-print("\nUpdating check-in verification status...");
+// Update checkin metadata
 db.checkins.updateMany(
     { checkInMethod: "mobileApp" },
     {
@@ -274,21 +228,56 @@ db.checkins.updateMany(
     }
 );
 
-// READ - Aggregate checkins by method
-print("\nCheck-in method distribution:");
+// Check-in method distribution
 db.checkins.aggregate([
     { $group: { _id: "$checkInMethod", count: { $sum: 1 } } },
     { $sort: { count: -1 } }
 ]).forEach(result => {
-    print(`- ${result._id}: ${result.count} check-ins`);
+    print(`${result._id}: ${result.count} check-ins`);
 });
 
 // ===== CROSS-COLLECTION OPERATIONS =====
-print("\n4. CROSS-COLLECTION OPERATIONS");
-print("-".repeat(40));
 
-// Find users who have reviewed events
-print("Finding users who have written reviews:");
+// User attendance history with lookups
+db.checkins.aggregate([
+    {
+        $match: { userId: sampleUser ? sampleUser._id : ObjectId() }
+    },
+    {
+        $lookup: {
+            from: "events",
+            localField: "eventId",
+            foreignField: "_id",
+            as: "event"
+        }
+    },
+    {
+        $lookup: {
+            from: "venues",
+            localField: "venueId",
+            foreignField: "_id",
+            as: "venue"
+        }
+    },
+    { $unwind: "$event" },
+    { $unwind: "$venue" },
+    { $sort: { checkInTime: -1 } },
+    { $limit: 10 },
+    {
+        $project: {
+            _id: 1,
+            eventTitle: "$event.title",
+            venueName: "$venue.name",
+            checkInTime: 1,
+            checkInMethod: 1,
+            ticketTier: 1
+        }
+    }
+]).forEach(result => {
+    print(`${result.eventTitle} at ${result.venueName} - ${result.checkInTime.toISOString()}`);
+});
+
+// Users who have written reviews
 db.reviews.aggregate([
     { $group: { _id: "$userId", reviewCount: { $sum: 1 } } },
     { $lookup: { 
@@ -304,11 +293,10 @@ db.reviews.aggregate([
         reviewCount: 1
     }}
 ]).forEach(result => {
-    print(`- ${result.name} (${result.email}): ${result.reviewCount} reviews`);
+    print(`${result.name} (${result.email}): ${result.reviewCount} reviews`);
 });
 
-// Find events with their check-in counts
-print("\nFinding events with check-in statistics:");
+// Events with check-in statistics
 db.checkins.aggregate([
     { $group: { 
         _id: "$eventId", 
@@ -328,25 +316,21 @@ db.checkins.aggregate([
         methodCount: { $size: "$uniqueMethods" }
     }}
 ]).forEach(result => {
-    print(`- ${result.eventTitle}: ${result.totalCheckins} check-ins using ${result.methodCount} methods`);
+    print(`${result.eventTitle}: ${result.totalCheckins} check-ins, ${result.methodCount} methods`);
 });
 
 // ===== DELETE OPERATIONS =====
-print("\n5. DELETE OPERATIONS");
-print("-".repeat(40));
 
-// Delete old reviews (older than 2 years)
+// Delete old reviews
 const twoYearsAgo = new Date();
 twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
 
-print("Deleting old reviews...");
 const oldReviewsResult = db.reviews.deleteMany({
     createdAt: { $lt: twoYearsAgo }
 });
 print(`Deleted ${oldReviewsResult.deletedCount} old reviews`);
 
 // Delete checkins for cancelled events
-print("Deleting check-ins for cancelled events...");
 const cancelledEvents = db.events.find({ status: "cancelled" }, { _id: 1 }).toArray();
 const cancelledEventIds = cancelledEvents.map(event => event._id);
 
@@ -357,11 +341,10 @@ if (cancelledEventIds.length > 0) {
     print(`Deleted ${cancelledCheckinsResult.deletedCount} check-ins for cancelled events`);
 }
 
-// Delete inactive users (no login in last year and no reviews/checkins)
+// Delete inactive test users
 const oneYearAgo = new Date();
 oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
-print("Finding inactive users for cleanup...");
 const activeUserIds = [
     ...db.reviews.distinct("userId"),
     ...db.checkins.distinct("userId")
@@ -376,21 +359,16 @@ const inactiveUsersResult = db.users.deleteMany({
             ]
         },
         { _id: { $nin: activeUserIds } },
-        { email: { $regex: /test|demo/i } } // Only delete test users
+        { email: { $regex: /test|demo/i } }
     ]
 });
 print(`Deleted ${inactiveUsersResult.deletedCount} inactive test users`);
 
 // ===== ADVANCED OPERATIONS =====
-print("\n6. ADVANCED OPERATIONS");
-print("-".repeat(40));
-
-// Bulk operations across collections
-print("Performing bulk operations...");
 
 // Update user activity based on recent checkins
 const recentCheckins = db.checkins.aggregate([
-    { $match: { checkInTime: { $gte: new Date(Date.now() - 30*24*60*60*1000) } } }, // Last 30 days
+    { $match: { checkInTime: { $gte: new Date(Date.now() - 30*24*60*60*1000) } } },
     { $group: { _id: "$userId", recentActivity: { $sum: 1 } } }
 ]).toArray();
 
@@ -406,8 +384,7 @@ recentCheckins.forEach(activity => {
     );
 });
 
-// Create user engagement summary
-print("Creating user engagement summary:");
+// User engagement summary
 db.users.aggregate([
     { $lookup: { 
         from: "reviews", 
@@ -430,8 +407,5 @@ db.users.aggregate([
     }},
     { $sort: { engagementScore: -1 } }
 ]).forEach(user => {
-    print(`- ${user.name}: ${user.reviewCount} reviews, ${user.checkinCount} check-ins (Score: ${user.engagementScore})`);
+    print(`${user.name}: ${user.reviewCount} reviews, ${user.checkinCount} check-ins`);
 });
-
-print("\nUsers, Reviews & Checkins CRUD Operations completed successfully!");
-print("=".repeat(60));

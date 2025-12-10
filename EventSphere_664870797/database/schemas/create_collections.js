@@ -1,8 +1,14 @@
-// Create collections with JSON Schema validators for EventSphere
+// EventSphere
+// Collections Creation
 // Student ID: 664 870 797 - Chris Lawrence
 // CSCI 485 - Fall 2025
 
-// Events Collection - Core catalog with polymorphic design
+// ===== SUMMARY =====
+// 6 collections: events, venues, users, reviews, checkins, tickets
+
+// ===== EVENTS COLLECTION SCHEMA =====
+
+// Polymorphic design for eventType with geospatial data
 db.createCollection("events", {
     validator: {
         $jsonSchema: {
@@ -30,7 +36,10 @@ db.createCollection("events", {
                         type: { enum: ["Point"] },
                         coordinates: {
                             bsonType: "array",
-                            items: { bsonType: "double" },
+                            items: [
+                                { bsonType: ["double", "int"], minimum: -180, maximum: 180 }, // longitude
+                                { bsonType: ["double", "int"], minimum: -90,  maximum: 90  }   // latitude
+                            ],
                             minItems: 2,
                             maxItems: 2
                         }
@@ -133,7 +142,9 @@ db.createCollection("events", {
     }
 });
 
-// Venues Collection - Polymorphic venue types with geospatial data
+// ===== VENUES COLLECTION SCHEMA =====
+
+// Polymorphic venue types with geospatial data
 db.createCollection("venues", {
     validator: {
         $jsonSchema: {
@@ -163,7 +174,10 @@ db.createCollection("venues", {
                         type: { enum: ["Point"] },
                         coordinates: {
                             bsonType: "array",
-                            items: { bsonType: "double" },
+                            items: [
+                                { bsonType: ["double", "int"], minimum: -180, maximum: 180 }, // longitude
+                                { bsonType: ["double", "int"], minimum: -90,  maximum: 90  }   // latitude
+                            ],
                             minItems: 2,
                             maxItems: 2
                         }
@@ -232,7 +246,9 @@ db.createCollection("venues", {
     }
 });
 
-// Users Collection - User profiles with preferences
+// ===== USERS COLLECTION SCHEMA =====
+
+// User profiles with preferences(future profile pages) and geospatial data(future location-based recommendations)
 db.createCollection("users", {
     validator: {
         $jsonSchema: {
@@ -255,7 +271,15 @@ db.createCollection("users", {
                                     bsonType: ["object", "null"],
                                     properties: {
                                         type: { enum: ["Point", null] },
-                                        coordinates: { bsonType: ["array", "null"], items: { bsonType: "double" }, minItems: 2, maxItems: 2 }
+                                        coordinates: {
+                                            bsonType: "array",
+                                            items: [
+                                                { bsonType: ["double", "int"], minimum: -180, maximum: 180 }, // longitude
+                                                { bsonType: ["double", "int"], minimum: -90,  maximum: 90  }   // latitude
+                                            ],
+                                            minItems: 2,
+                                            maxItems: 2
+                                        }
                                     }
                                 },
                                 radiusKm: { bsonType: ["double", "int", "long", "null"], minimum: 0 }
@@ -271,7 +295,9 @@ db.createCollection("users", {
     }
 });
 
-// Reviews Collection - Event and venue reviews
+// ===== REVIEWS COLLECTION SCHEMA =====
+
+// Event and venue reviews
 db.createCollection("reviews", {
     validator: {
         $jsonSchema: {
@@ -291,7 +317,9 @@ db.createCollection("reviews", {
     }
 });
 
-// Check-ins Collection - Bridge table for user-event attendance
+// ===== CHECKINS COLLECTION SCHEMA =====
+
+// Bridge table for user-event attendance
 db.createCollection("checkins", {
     validator: {
         $jsonSchema: {
@@ -301,8 +329,9 @@ db.createCollection("checkins", {
                 eventId: { bsonType: "objectId" },
                 userId: { bsonType: "objectId" },
                 venueId: { bsonType: "objectId" },
+                ticketId: { bsonType: ["objectId", "null"] },
                 checkInTime: { bsonType: "date" },
-                qrCode: { bsonType: "string", minLength: 3 },
+                qrCode: { bsonType: ["string", "null"] },
                 schemaVersion: { bsonType: "string", enum: ["1.0"] },
                 ticketTier: { bsonType: ["string", "null"] },
                 checkInMethod: { bsonType: ["string", "null"], enum: ["qrCode", "manual", "mobileApp", null] },
@@ -328,6 +357,29 @@ db.createCollection("checkins", {
     }
 });
 
+// ===== TICKETS COLLECTION SCHEMA =====
+
+// Individual user ticket purchases (separate from embedded EventTickets showing available ticketTier)
+// This collection stores actual user purchases for scalability
+db.createCollection("tickets", {
+    validator: {
+        $jsonSchema: {
+            bsonType: "object",
+            required: ["eventId", "userId", "pricePaid", "status", "purchasedAt", "schemaVersion", "createdAt"],
+            properties: {
+                eventId: { bsonType: "objectId" },
+                userId: { bsonType: "objectId" },
+                pricePaid: { bsonType: ["double", "int", "long"], minimum: 0 },
+                status: { bsonType: "string", enum: ["active", "cancelled", "used", "refunded"] },
+                ticketTier: { bsonType: ["string", "null"] },
+                purchasedAt: { bsonType: "date" },
+                schemaVersion: { bsonType: "string", enum: ["1.0"] },
+                createdAt: { bsonType: "date" }
+            }
+        }
+    }
+});
+
 print("All collections created successfully with schema validation!");
-print("Collections created: events, venues, users, reviews, checkins");
+print("Collections created: events, venues, users, reviews, checkins, tickets");
 print("Next step: Run create_indexes.js to create performance indexes");

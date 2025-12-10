@@ -214,3 +214,8 @@ pnpm-lock.yaml
 .pnpm-debug.log*
 dist/
 coverage/
+
+#EventSphere dump
+apps/eventsphere/EventSphere_664870797/eventsphere_dump/
+eventsphere_dump/
+eventsphere_dump_gzip/

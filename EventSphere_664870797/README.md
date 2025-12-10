@@ -1,13 +1,18 @@
-# EventSphere - MongoDB Event Management System
+# **Event***Sphere*: MongoDB Event Management System
+## README
 
 **Student ID:** 664 870 797  
 **Student Name:** Chris Lawrence  
 **Course:** CSCI 485 - Topics in Computer Science (MongoDB/NoSQL)  
-**Semester:** Fall 2025  
+**Section:** F25N01   
+**Instructor:** Dr. Kawal Jeet  
+**Submission Date:** November 30, 2025  
 
 ## Project Overview
 
-EventSphere is a comprehensive MongoDB-based event management system that demonstrates advanced NoSQL database concepts through real-world application design. The system enables users to discover, review, and attend in-person, virtual, and hybrid events with sophisticated geospatial discovery, full-text search, and real-time analytics capabilities.
+[EventSphere Demo Website](https://eventsphere.chrislawrence.ca/)
+
+EventSphere is a MongoDB-based event management system that demonstrates advanced NoSQL database concepts through real-world application design. The system enables users to discover, review, and attend in-person, virtual, and hybrid events with sophisticated geospatial discovery, full-text search, and advanced analytics capabilities.
 
 ## Key Features Demonstrated
 
@@ -16,8 +21,6 @@ EventSphere is a comprehensive MongoDB-based event management system that demons
 - **Text Search**: Multi-field text indexes with relevance scoring across event titles, descriptions, and tags
 - **Aggregation Pipelines**: Complex analytics including revenue tracking, attendance patterns, and venue performance metrics
 - **Schema Validation**: Comprehensive JSON Schema validation with polymorphic design patterns
-- **Transactions**: Multi-document ACID transactions for critical operations like ticket booking
-- **Change Streams**: Real-time updates via WebSocket integration
 
 ### Design Patterns
 - **Polymorphic Design**: Events and venues support multiple types with type-specific attributes
@@ -26,7 +29,7 @@ EventSphere is a comprehensive MongoDB-based event management system that demons
 - **Schema Versioning**: Future-proof design with version-aware document structure
 
 ### Performance Optimization
-- **Strategic Indexing**: 15+ indexes optimized for real-world query patterns
+- **Strategic Indexing**: 24 indexes optimized for real-world query patterns
 - **Compound Indexes**: Multi-field indexes for complex filtering scenarios
 - **Cursor-based Pagination**: Efficient pagination for large result sets
 - **Query Performance**: Sub-100ms response times for most operations
@@ -35,16 +38,19 @@ EventSphere is a comprehensive MongoDB-based event management system that demons
 
 ```
 EventSphere_664870797/
-├── README.md                    # This file - project overview and setup
-├── database/                    # Database implementation files
-│   ├── schemas/                 # Collection schemas and validation rules
+├── README.md                   # This file - project overview and setup
+├── database/                   # Database implementation files
+│   ├── schemas/                # Collection schemas and validation rules
 │   ├── sample_data/            # Sample data for testing and demonstration
 │   └── indexes/                # Index creation scripts
-├── queries/                     # Query examples and demonstrations
+├── queries/                    # Query examples and demonstrations
 │   ├── basic_CRUD/             # Create, Read, Update, Delete operations
 │   ├── aggregations/           # Complex aggregation pipelines
 │   └── analysis/               # Analytics and reporting queries
 ├── documentation/              # Project documentation
+│   ├── mongodb_crd.png         # MongoDB collection diagram
+│   ├── collection_diagram.svg  # Collection diagram
+│   ├── er_diagram.svg          # ER diagram
 │   ├── project_report.pdf      # Comprehensive project report
 │   └── database_design.pdf     # Database design documentation
 ├── presentation/               # Presentation materials
@@ -52,7 +58,6 @@ EventSphere_664870797/
 └── reflection/                 # Learning reflection
     └── learning_reflection.pdf # Personal learning outcomes
 ```
-
 ## Database Collections
 
 ### Core Collections
@@ -61,81 +66,56 @@ EventSphere_664870797/
 3. **users** - User profiles with preferences and location data
 4. **checkins** - Bridge collection for user-event attendance tracking
 5. **reviews** - Event and venue reviews with rating system
+6. **tickets** - User ticket purchases with ticket type and price
 
 ### Key Statistics
-- **1000+ realistic sample records** across all collections
-- **4+ relationship types** demonstrated (1:1, 1:many, many:many)
-- **25+ different queries** documented with performance analysis
-- **5+ strategic indexes** with geospatial and text search capabilities
-- **3+ complex aggregation pipelines** for analytics
+- **1,089,392** realistic sample records across all collections
+- **All relationship types** demonstrated (1:1, 1:many, many:many)
+- **30+ different queries** documented with performance analysis
+- **24+ strategic indexes** with geospatial and text search capabilities
+- **6+ complex aggregation pipelines** for analytics
 
 ## Technology Stack
 
 ### Backend
-- **Python 3.11+** - Primary application language
+- **Python** - Primary application language
 - **Flask** - Web framework for API and web interface
 - **PyMongo** - MongoDB driver for Python
-- **MongoDB 7.0+** - Primary database
+- **MongoDB Atlas** - Primary database
 
 ### Frontend
 - **HTML5/CSS3** - Modern responsive web interface
-- **JavaScript (ES6+)** - Interactive features and real-time updates
-- **Socket.IO** - Real-time WebSocket communication
+- **JavaScript** - Interactive features with dynamic UI behaviors
 - **Leaflet.js** - Interactive maps for geospatial features
 
 ### Development Tools
-- **MongoDB Compass** - Database visualization and query testing
-- **Postman** - API testing and documentation
-- **Git** - Version control
+- **mongosh** - Database shell for querying and managing the database
+- **GitHub** - Version control
 
 ## Quick Start
 
+### Connection String
+The working connection string `MONGODB_URI` is stored in the `.env` file for your testing with mongosh. It does connect to my MongoDB Atlas account, and is live on my demo website, so please limit the queries to non-destructive operations.
+```
+MONGODB_URI=mongodb+srv://<username>:<password>@<cluster-address>/<database-name>?retryWrites=true&w=majority
+```
+
 ### Prerequisites
-- Python 3.11+
-- MongoDB 7.0+
-- Node.js 18+ (for frontend dependencies)
+- mongosh installed
 
-### Installation
-
-1. **Clone the repository**
+### Connect to MongoDB Atlas and initialize database
+   
+   Replace `<your-connection-string>` with your MongoDB Atlas connection string:
    ```bash
-   git clone <repository-url>
-   cd mongo-events-demo
-   ```
-
-2. **Set up Python environment**
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   pip install -r requirements.txt
-   ```
-
-3. **Configure MongoDB**
-   ```bash
-   # Update app/config.py with your MongoDB connection string
-   # Default: mongodb://localhost:27017/events_demo
-   ```
-
-4. **Initialize database**
-   ```bash
+   # Connect to MongoDB Atlas
+   mongosh "<your-connection-string>"
+   
    # Create collections with validation
-   mongosh < EventSphere_664870797/database/schemas/create_collections.js
+   mongosh "<your-connection-string>" < database/schemas/create_collections.js
    
    # Create indexes
-   mongosh < EventSphere_664870797/database/indexes/create_indexes.js
-   
-   # Load sample data
-   python generate_test_data.py --seed-db --events 1000 --venues 100 --users 500
+   mongosh "<your-connection-string>" < database/indexes/create_indexes.js
    ```
-
-5. **Run the application**
-   ```bash
-   python run.py
-   ```
-
-6. **Access the application**
-   - Web Interface: http://localhost:5000
-   - API Documentation: http://localhost:5000/api/docs
 
 ## Key Query Examples
 
@@ -182,22 +162,10 @@ db.checkins.aggregate([
 ])
 ```
 
-## Performance Benchmarks
-
-Based on testing with 10,000+ events:
-- **Geospatial queries**: < 50ms average response time
-- **Text search**: < 100ms with relevance scoring
-- **Complex aggregations**: < 200ms for analytics queries
-- **CRUD operations**: < 25ms for single document operations
-
 ## Advanced Features
 
-### Real-time Updates
-- WebSocket integration for live event updates
-- Change streams for database monitoring
-- Real-time attendance tracking
-
 ### Analytics Dashboard
+- Computed statistics for events and venues.
 - Event popularity trends
 - Venue utilization metrics
 - User engagement analytics
@@ -208,65 +176,3 @@ Based on testing with 10,000+ events:
 - Radius-based event discovery
 - Location-aware recommendations
 - Venue proximity analysis
-
-## Project Completion Status
-
-### Completed Components
-- [x] Database schema design with validation
-- [x] Core application functionality
-- [x] Geospatial query implementation
-- [x] Text search capabilities
-- [x] Basic CRUD operations
-- [x] Sample data generation
-- [x] Index optimization
-- [x] Real-time features
-
-### In Progress
-- [ ] Comprehensive query documentation
-- [ ] Project report writing
-- [ ] Presentation slide creation
-- [ ] Performance testing documentation
-
-### Pending
-- [ ] Learning reflection document
-- [ ] Final testing and validation
-- [ ] Documentation review and polish
-
-**Current Completion: ~75%**
-
-## Submission Checklist
-
-### Database Implementation
-- [x] MongoDB database with 4+ collections
-- [x] 1000+ realistic sample records
-- [x] Schema validation rules implemented
-- [x] All relationship types demonstrated
-- [x] Polymorphic design patterns
-
-### Queries and Operations
-- [x] 25+ different queries documented
-- [x] CRUD operations for all collections
-- [x] 3+ complex aggregation pipelines
-- [x] Performance optimization with indexes
-- [x] Text search implementation
-- [x] Geospatial queries
-- [x] 5+ strategic indexes
-
-### Documentation
-- [x] Database design document
-- [ ] Query documentation (in progress)
-- [ ] Final project report (pending)
-
-### Presentation Materials
-- [ ] Presentation slides (pending)
-
-## Contact Information
-
-**Chris Lawrence**  
-Student ID: 664 870 797  
-Email: [student-email]  
-Course: CSCI 485 - Fall 2025  
-
-## License
-
-This project is created for academic purposes as part of CSCI 485 coursework.
