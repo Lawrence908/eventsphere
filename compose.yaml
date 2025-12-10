@@ -6,6 +6,9 @@ services:
     build: .
     container_name: mongo-events
     restart: unless-stopped
+    dns:
+      - 8.8.8.8
+      - 1.1.1.1
     networks:
       - web
     ports:
