@@ -2,9 +2,9 @@
 # Port 8140 - chrislawrence.ca/events
 
 services:
-  mongo-events:
+  eventsphere:
     build: .
-    container_name: mongo-events
+    container_name: eventsphere
     restart: unless-stopped
     dns:
       - 8.8.8.8
